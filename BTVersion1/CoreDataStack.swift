@@ -92,6 +92,12 @@ final class CoreDataStack {
         userProperties.append(optionalIntAttr("proteinTarget"))
         userProperties.append(optionalIntAttr("fatTarget"))
 
+        let geminiAPIKeyAttr = NSAttributeDescription()
+        geminiAPIKeyAttr.name = "geminiAPIKey"
+        geminiAPIKeyAttr.attributeType = .stringAttributeType
+        geminiAPIKeyAttr.isOptional = true
+        userProperties.append(geminiAPIKeyAttr)
+
         user.properties = userProperties
 
         // FoodEntry entity

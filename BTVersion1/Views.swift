@@ -653,6 +653,14 @@ struct HomeView: View {
                         }
                         Text(goalLabel(for: profile.goal)).font(.caption.weight(.semibold)).foregroundColor(.primaryOrange).padding(.horizontal, 10).padding(.vertical, 6).background(Color.primaryOrange.opacity(0.12)).clipShape(Capsule())
                     }
+                    HStack(spacing: 12) {
+                        Image(systemName: "quote.opening").font(.title3).foregroundColor(.primaryOrange)
+                        Text(dailyMotivation).font(.subheadline.weight(.medium))
+                        Spacer()
+                    }
+                    .padding(14)
+                    .background(Color.primaryOrange.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                     VStack(spacing: 16) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
@@ -717,6 +725,18 @@ struct HomeView: View {
         }
     }
 
+    private var dailyMotivation: String {
+        let messages = [
+            "Small choices today create a stronger tomorrow.",
+            "You do not need perfect, just one good choice at a time.",
+            "Your consistency is your superpower today.",
+            "Progress starts with paying attention. You are doing that now.",
+            "Fuel your body with the care it deserves."
+        ]
+        let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
+        return messages[day % messages.count]
+    }
+
     private func consumedToday(store: AppStore) -> Int {
         let today = Calendar.current.startOfDay(for: Date())
         return store.entries.filter { Calendar.current.startOfDay(for: $0.date) == today }.reduce(0) { $0 + $1.calories }
@@ -776,6 +796,8 @@ struct ScanView: View {
     @State private var pickedImage: UIImage?
     @State private var analysis: (calories:Int, carbs:Int, protein:Int, fats:Int)? = nil
     @State private var name = "Scanned Food"
+    @State private var isAnalyzing = false
+    @State private var scanMessage = ""
 
     var body: some View {
         ZStack {
@@ -815,6 +837,16 @@ struct ScanView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.primaryOrange)
+                        if isAnalyzing {
+                            ProgressView("Analyzing with Gemini...")
+                                .frame(maxWidth: .infinity)
+                        }
+                        if !scanMessage.isEmpty {
+                            Text(scanMessage)
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                     .padding(16)
                     .background(.regularMaterial)
@@ -824,7 +856,9 @@ struct ScanView: View {
                             HStack {
                                 Label("Nutrition estimate", systemImage: "sparkles").font(.headline)
                                 Spacer()
-                                Text("READY").font(.caption2.weight(.bold)).foregroundColor(.green)
+                                Text(isAnalyzing ? "ANALYZING" : "READY")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundColor(isAnalyzing ? .orange : .green)
                             }
                             RegistrationInputField(title: "Meal name", placeholder: "Name this meal", icon: "fork.knife", text: $name)
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -857,9 +891,32 @@ struct ScanView: View {
             ImagePicker(image: $pickedImage)
                 .onChange(of: pickedImage) { new in
                     if let img = new {
-                        analysis = MacroCalculator.analyzeImage(img)
+                        Task { await analyzeImage(img) }
                     }
                 }
+        }
+    }
+
+    private func analyzeImage(_ image: UIImage) async {
+        await MainActor.run {
+            isAnalyzing = true
+            scanMessage = ""
+            analysis = nil
+        }
+        do {
+            guard let profile = store.profile else { throw GeminiNutritionError.invalidAPIKey }
+            let result = try await GeminiNutritionService().analyze(image: image, apiKey: profile.geminiAPIKey ?? "")
+            await MainActor.run {
+                name = result.name
+                analysis = (result.calories, result.carbs, result.protein, result.fats)
+                isAnalyzing = false
+            }
+        } catch {
+            await MainActor.run {
+                analysis = MacroCalculator.analyzeImage(image)
+                isAnalyzing = false
+                scanMessage = "AI unavailable: \(error.localizedDescription) Showing a local estimate."
+            }
         }
     }
 }
@@ -1077,6 +1134,7 @@ struct ProfileView: View {
     @EnvironmentObject var store: AppStore
     @State private var name = ""
     @State private var email = ""
+    @State private var geminiAPIKey = ""
     @State private var gender = ""
     @State private var age = 30
     @State private var weight = 70
@@ -1143,6 +1201,7 @@ struct ProfileView: View {
                             }
                             RegistrationInputField(title: "Name", placeholder: "Your name", icon: "person.fill", text: $name, isEditable: isEditing)
                             RegistrationInputField(title: "Email", placeholder: "Email address", icon: "envelope.fill", text: $email, isEmail: true, isEditable: isEditing)
+                            APIKeyInputField(value: $geminiAPIKey, isEditable: isEditing)
                             ProfileGenderField(gender: $gender, isEditable: isEditing)
                             ProfilePickerField(title: "Age", unit: "years", icon: "calendar", value: $age, range: 13...100, isEditable: isEditing)
                             ProfilePickerField(title: "Weight", unit: "kg", icon: "scalemass.fill", value: $weight, range: 30...250, isEditable: isEditing)
@@ -1220,6 +1279,7 @@ struct ProfileView: View {
         guard name.isEmpty else { return }
         name = profile.name
         email = profile.email
+        geminiAPIKey = profile.geminiAPIKey ?? ""
         gender = profile.gender ?? ""
         age = profile.age ?? 30
         weight = Int(profile.weightKg ?? 70)
@@ -1235,6 +1295,7 @@ struct ProfileView: View {
         guard var profile = store.profile else { return }
         profile.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         profile.email = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        profile.geminiAPIKey = geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         profile.gender = gender.isEmpty ? nil : gender
         profile.age = age
         profile.weightKg = Double(weight)
@@ -1287,6 +1348,35 @@ struct ProfileGenderField: View {
         .background(Color.white.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primaryOrange.opacity(0.15), lineWidth: 1.5))
+    }
+}
+
+struct APIKeyInputField: View {
+    @Binding var value: String
+    let isEditable: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "key.fill")
+                .foregroundColor(.accentBlue)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("GEMINI API KEY")
+                    .font(.caption2.weight(.bold))
+                    .foregroundColor(.secondary)
+                SecureField("Paste your Gemini key", text: $value)
+                    .textFieldStyle(.plain)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .disabled(!isEditable)
+            }
+        }
+        .padding(.horizontal, 14)
+        .frame(minHeight: 58)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(isEditable ? 0.45 : 0.12), lineWidth: 1.5))
+        .opacity(isEditable ? 1 : 0.72)
     }
 }
 

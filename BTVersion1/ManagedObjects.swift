@@ -20,6 +20,7 @@ public class CDUserProfile: NSManagedObject {
     @NSManaged public var calorieTarget: NSNumber?
     @NSManaged public var proteinTarget: NSNumber?
     @NSManaged public var fatTarget: NSNumber?
+    @NSManaged public var geminiAPIKey: String?
 }
 
 @objc(CDFoodEntry)
@@ -46,6 +47,7 @@ extension CDUserProfile {
         obj.calorieTarget = model.calorieTarget.map(NSNumber.init(value:))
         obj.proteinTarget = model.proteinTarget.map(NSNumber.init(value:))
         obj.fatTarget = model.fatTarget.map(NSNumber.init(value:))
+        obj.geminiAPIKey = model.geminiAPIKey
         return obj
     }
 
@@ -58,6 +60,7 @@ extension CDUserProfile {
         up.calorieTarget = calorieTarget?.intValue
         up.proteinTarget = proteinTarget?.intValue
         up.fatTarget = fatTarget?.intValue
+        up.geminiAPIKey = geminiAPIKey
         return up
     }
 }
