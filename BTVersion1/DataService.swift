@@ -116,7 +116,7 @@ struct GeminiNutritionService {
         guard !trimmedKey.isEmpty else { throw GeminiNutritionError.invalidAPIKey }
         guard let imageData = image.jpegData(compressionQuality: 0.8) else { throw GeminiNutritionError.invalidResponse }
 
-        let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\(trimmedKey)")!
+        let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=\(trimmedKey)")!
         let prompt = "Analyze the food in this image. Return JSON only with exactly these keys: name (string), calories (integer kcal), carbs (integer grams), protein (integer grams), fats (integer grams). Use reasonable estimates. No markdown or explanation."
         let requestBody = Request(contents: [.init(parts: [.init(text: prompt, inlineData: nil), .init(text: nil, inlineData: .init(mimeType: "image/jpeg", data: imageData.base64EncodedString()))])])
 
@@ -146,5 +146,41 @@ struct GeminiNutritionService {
         let cleanText = text.replacingOccurrences(of: "```json", with: "").replacingOccurrences(of: "```", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
         let nutrition = try JSONDecoder().decode(Nutrition.self, from: Data(cleanText.utf8))
         return (nutrition.name ?? "Scanned Food", max(0, nutrition.calories), max(0, nutrition.carbs), max(0, nutrition.protein), max(0, nutrition.fats))
+    }
+
+    func motivationalQuote(apiKey: String) async throws -> String {
+        let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKey.isEmpty else { throw GeminiNutritionError.invalidAPIKey }
+
+        let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=\(trimmedKey)")!
+        let prompt = "Write one short, original motivational sentence about healthy eating and consistent nutrition tracking. Return only the sentence, with no quotation marks, labels, markdown, or explanation."
+        let requestBody = Request(contents: [.init(parts: [.init(text: prompt, inlineData: nil)])])
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(requestBody)
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 60
+        configuration.timeoutIntervalForResource = 60
+        let session = URLSession(configuration: configuration)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch is URLError {
+            throw GeminiNutritionError.requestFailed("Gemini took too long to respond. Please try again later.")
+        } catch {
+            throw GeminiNutritionError.requestFailed(error.localizedDescription)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw GeminiNutritionError.requestFailed("Gemini could not create a motivation message. Check your API key and try again.")
+        }
+        let decodedResponse = try JSONDecoder().decode(Response.self, from: data)
+        guard let text = decodedResponse.candidates?.first?.content.parts.first?.text else { throw GeminiNutritionError.invalidResponse }
+        let quote = text.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”"))
+        guard !quote.isEmpty else { throw GeminiNutritionError.invalidResponse }
+        return quote
     }
 }

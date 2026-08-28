@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - Theme
 extension Color {
     static let primaryOrange = Color(red: 1.0, green: 0.58, blue: 0.38)
-    static let accentBlue = Color(red: 0.07, green: 0.66, blue: 0.95)
+    static let accentBlue = Color(red: 0.96, green: 0.38, blue: 0.24)
     static let lightCard = Color(white: 0.97)
 }
 
@@ -472,6 +472,7 @@ struct MainTabView: View {
             WaterView().tabItem { Label("Water", systemImage: "drop.fill") }
             ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
+        .tint(.primaryOrange)
     }
 }
 
@@ -524,7 +525,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(red: 0.93, green: 0.98, blue: 1.0), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -629,11 +630,14 @@ struct MainTabView: View {
             WaterView().tabItem { Label("Water", systemImage: "drop.fill") }
             ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
+        .tint(.primaryOrange)
     }
 }
 
 struct HomeView: View {
     @EnvironmentObject var store: AppStore
+    @State private var motivation = ""
+    @State private var motivationStatus = "Loading your daily motivation..."
 
     var body: some View {
         ScrollView {
@@ -649,18 +653,24 @@ struct HomeView: View {
                                 Text(firstName).font(.system(size: 34, weight: .bold, design: .rounded))
                             }
                             Spacer()
-                            Image(systemName: "leaf.fill").font(.title2).foregroundColor(.primaryOrange).padding(12).background(Color.primaryOrange.opacity(0.12)).clipShape(Circle())
+                            Image(systemName: "leaf.circle.fill").font(.title2).foregroundColor(.primaryOrange).padding(12).background(Color.primaryOrange.opacity(0.12)).clipShape(Circle())
                         }
                         Text(goalLabel(for: profile.goal)).font(.caption.weight(.semibold)).foregroundColor(.primaryOrange).padding(.horizontal, 10).padding(.vertical, 6).background(Color.primaryOrange.opacity(0.12)).clipShape(Capsule())
                     }
                     HStack(spacing: 12) {
                         Image(systemName: "quote.opening").font(.title3).foregroundColor(.primaryOrange)
-                        Text(dailyMotivation).font(.subheadline.weight(.medium))
+                        if motivation.isEmpty {
+                            ProgressView()
+                            Text(motivationStatus).font(.subheadline.weight(.medium)).foregroundColor(.secondary)
+                        } else {
+                            Text(motivation).font(.subheadline.weight(.medium))
+                        }
                         Spacer()
                     }
                     .padding(14)
                     .background(Color.primaryOrange.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    HomeStreakCard(streak: NutritionStreakCalculator.currentStreak(entries: store.entries, targets: targets))
                     VStack(spacing: 16) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
@@ -707,6 +717,9 @@ struct HomeView: View {
             .padding(20)
         }
         .background(Color(red: 0.98, green: 0.98, blue: 0.97).ignoresSafeArea())
+        .task(id: store.profile?.geminiAPIKey) {
+            await loadDailyMotivation()
+        }
     }
 
     private var greeting: String {
@@ -725,16 +738,35 @@ struct HomeView: View {
         }
     }
 
-    private var dailyMotivation: String {
-        let messages = [
-            "Small choices today create a stronger tomorrow.",
-            "You do not need perfect, just one good choice at a time.",
-            "Your consistency is your superpower today.",
-            "Progress starts with paying attention. You are doing that now.",
-            "Fuel your body with the care it deserves."
-        ]
-        let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
-        return messages[day % messages.count]
+    private func loadDailyMotivation() async {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Date())
+        let cachedDateKey = "dailyMotivation.date"
+        let cachedQuoteKey = "dailyMotivation.quote"
+
+        if UserDefaults.standard.string(forKey: cachedDateKey) == today,
+           let cachedQuote = UserDefaults.standard.string(forKey: cachedQuoteKey),
+           !cachedQuote.isEmpty {
+            motivation = cachedQuote
+            motivationStatus = ""
+            return
+        }
+
+        guard let apiKey = store.profile?.geminiAPIKey else {
+            motivationStatus = "Add your Gemini API key in Profile to receive today's motivation."
+            return
+        }
+
+        do {
+            let quote = try await GeminiNutritionService().motivationalQuote(apiKey: apiKey)
+            UserDefaults.standard.set(today, forKey: cachedDateKey)
+            UserDefaults.standard.set(quote, forKey: cachedQuoteKey)
+            motivation = quote
+            motivationStatus = ""
+        } catch {
+            motivationStatus = error.localizedDescription
+        }
     }
 
     private func consumedToday(store: AppStore) -> Int {
@@ -771,6 +803,69 @@ struct HomeMacroTile: View {
             Spacer(minLength: 0)
         }
         .padding(12).background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+struct HomeStreakCard: View {
+    let streak: Int
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "flame.fill")
+                .font(.title2)
+                .foregroundColor(.orange)
+                .frame(width: 42, height: 42)
+                .background(Color.orange.opacity(0.14))
+                .clipShape(Circle())
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Nutrition streak").font(.subheadline.weight(.semibold))
+                Text(streak == 0 ? "Complete all targets to start your streak." : "Keep going, you are on a roll.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 1) {
+                Text("\(streak)").font(.title2.weight(.bold)).foregroundColor(.orange)
+                Text(streak == 1 ? "day" : "days").font(.caption2).foregroundColor(.secondary)
+            }
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+struct NutritionStreakCalculator {
+    static func currentStreak(entries: [FoodEntry], targets: MacroTargets) -> Int {
+        let calendar = Calendar.current
+        let completedDays = completedDays(entries: entries, targets: targets, calendar: calendar)
+        var day = calendar.startOfDay(for: Date())
+
+        if !completedDays.contains(day) {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: day), completedDays.contains(yesterday) else {
+                return 0
+            }
+            day = yesterday
+        }
+
+        var streak = 0
+        while completedDays.contains(day) {
+            streak += 1
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: day) else { break }
+            day = previousDay
+        }
+        return streak
+    }
+
+    private static func completedDays(entries: [FoodEntry], targets: MacroTargets, calendar: Calendar) -> Set<Date> {
+        let grouped = Dictionary(grouping: entries) { calendar.startOfDay(for: $0.date) }
+        return Set(grouped.compactMap { day, dayEntries in
+            let calories = dayEntries.reduce(0) { $0 + $1.calories }
+            let protein = dayEntries.reduce(0) { $0 + $1.proteinGrams }
+            let carbs = dayEntries.reduce(0) { $0 + $1.carbsGrams }
+            let fats = dayEntries.reduce(0) { $0 + $1.fatsGrams }
+            return calories >= targets.calories && protein >= targets.proteinGrams && carbs >= targets.carbsGrams && fats >= targets.fatsGrams ? day : nil
+        })
     }
 }
 
@@ -951,7 +1046,7 @@ struct TrackerView: View {
         let targets = store.profile.map { MacroCalculator.targets(for: $0) }
 
         ZStack {
-            LinearGradient(colors: [Color(red: 0.93, green: 0.98, blue: 1.0), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()
 
             ScrollView {
@@ -984,6 +1079,12 @@ struct TrackerView: View {
                             Text("\(max(0, targets.calories - totals.calories)) kcal remaining of \(targets.calories) kcal")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.8))
+                            HStack(spacing: 6) {
+                                Image(systemName: "flame.fill")
+                                Text("\(NutritionStreakCalculator.currentStreak(entries: store.entries, targets: targets)) day nutrition streak")
+                            }
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.white)
                         } else {
                             Text("Start logging meals to see your progress.")
                                 .font(.caption)
@@ -991,9 +1092,9 @@ struct TrackerView: View {
                         }
                     }
                     .padding(20)
-                    .background(LinearGradient(colors: [.accentBlue, Color(red: 0.04, green: 0.42, blue: 0.72)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .background(LinearGradient(colors: [.primaryOrange, Color(red: 0.94, green: 0.30, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .shadow(color: Color.accentBlue.opacity(0.25), radius: 14, y: 8)
+                    .shadow(color: Color.primaryOrange.opacity(0.25), radius: 14, y: 8)
 
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
@@ -1038,6 +1139,11 @@ struct TrackerView: View {
                                 TrackerMealRow(entry: entry)
                                 if entry.id != todayEntries.last?.id {
                                     Divider().padding(.leading, 52)
+                                }
+                            }
+                            .onDelete { offsets in
+                                for offset in offsets {
+                                    store.deleteEntry(todayEntries[offset])
                                 }
                             }
                         }
@@ -1168,7 +1274,7 @@ struct ProfileView: View {
                                 }
                                 Spacer()
                                 Circle()
-                                    .fill(LinearGradient(colors: [.primaryOrange, .accentBlue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .fill(LinearGradient(colors: [.primaryOrange, Color(red: 0.94, green: 0.30, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing))
                                     .frame(width: 62, height: 62)
                                     .overlay(Text(String((name.isEmpty ? p.email : name).prefix(1)).uppercased()).font(.title2.weight(.bold)).foregroundColor(.white))
                             }

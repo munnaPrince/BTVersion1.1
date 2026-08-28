@@ -40,6 +40,15 @@ class AppStore: ObservableObject {
         }
     }
 
+    func deleteEntry(_ e: FoodEntry) {
+        do {
+            try service.deleteEntry(id: e.id)
+            entries.removeAll { $0.id == e.id }
+        } catch {
+            print("Failed to delete entry: \(error)")
+        }
+    }
+
     func logout() {
         profile = nil
         loggedIn = false
