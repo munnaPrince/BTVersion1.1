@@ -6,12 +6,12 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 // MARK: - Theme
 extension Color {
     static let primaryOrange = Color(red: 1.0, green: 0.58, blue: 0.38)
     static let accentBlue = Color(red: 0.96, green: 0.38, blue: 0.24)
-    static let lightCard = Color(white: 0.97)
 }
 
 struct ContentView: View {
@@ -28,18 +28,6 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut, value: store.loggedIn)
-    }
-}
-
-struct Card<Content: View>: View {
-    let content: Content
-    init(@ViewBuilder _ content: () -> Content) { self.content = content() }
-    var body: some View {
-        content
-            .padding()
-            .background(Color.lightCard)
-            .cornerRadius(14)
-            .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
 }
 
@@ -471,6 +459,7 @@ struct MainTabView: View {
             TrackerView().tabItem { Label("Tracker", systemImage: "chart.bar.fill") }
             WaterView().tabItem { Label("Water", systemImage: "drop.fill") }
             ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }
+            SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
         .tint(.primaryOrange)
     }
@@ -629,6 +618,7 @@ struct MainTabView: View {
             TrackerView().tabItem { Label("Tracker", systemImage: "chart.bar.fill") }
             WaterView().tabItem { Label("Water", systemImage: "drop.fill") }
             ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }
+            SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
         .tint(.primaryOrange)
     }
@@ -650,10 +640,23 @@ struct HomeView: View {
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(greeting).font(.subheadline.weight(.medium)).foregroundColor(.secondary)
-                                Text(firstName).font(.system(size: 34, weight: .bold, design: .rounded))
+                                HStack(spacing: 8) {
+                                    Text(firstName).font(.system(size: 34, weight: .bold, design: .rounded))
+                                    HStack(spacing: 3) {
+                                        Image(systemName: "flame.fill")
+                                        Text("\(NutritionStreakCalculator.currentStreak(entries: store.entries, targets: targets))")
+                                    }
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundColor(.orange)
+                                }
                             }
                             Spacer()
-                            Image(systemName: "leaf.circle.fill").font(.title2).foregroundColor(.primaryOrange).padding(12).background(Color.primaryOrange.opacity(0.12)).clipShape(Circle())
+                            Image(systemName: "leaf.circle.fill")
+                                .font(.system(size: 30, weight: .semibold))
+                                .foregroundColor(.primaryOrange)
+                                .frame(width: 56, height: 56)
+                                .background(Color.primaryOrange.opacity(0.12))
+                                .clipShape(Circle())
                         }
                         Text(goalLabel(for: profile.goal)).font(.caption.weight(.semibold)).foregroundColor(.primaryOrange).padding(.horizontal, 10).padding(.vertical, 6).background(Color.primaryOrange.opacity(0.12)).clipShape(Capsule())
                     }
@@ -670,7 +673,6 @@ struct HomeView: View {
                     .padding(14)
                     .background(Color.primaryOrange.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
-                    HomeStreakCard(streak: NutritionStreakCalculator.currentStreak(entries: store.entries, targets: targets))
                     VStack(spacing: 16) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
@@ -803,35 +805,6 @@ struct HomeMacroTile: View {
             Spacer(minLength: 0)
         }
         .padding(12).background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-
-struct HomeStreakCard: View {
-    let streak: Int
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "flame.fill")
-                .font(.title2)
-                .foregroundColor(.orange)
-                .frame(width: 42, height: 42)
-                .background(Color.orange.opacity(0.14))
-                .clipShape(Circle())
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Nutrition streak").font(.subheadline.weight(.semibold))
-                Text(streak == 0 ? "Complete all targets to start your streak." : "Keep going, you are on a roll.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 1) {
-                Text("\(streak)").font(.title2.weight(.bold)).foregroundColor(.orange)
-                Text(streak == 1 ? "day" : "days").font(.caption2).foregroundColor(.secondary)
-            }
-        }
-        .padding(14)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -984,7 +957,7 @@ struct ScanView: View {
         }
         .sheet(isPresented: $showingPicker) {
             ImagePicker(image: $pickedImage)
-                .onChange(of: pickedImage) { new in
+                .onChange(of: pickedImage) { _, new in
                     if let img = new {
                         Task { await analyzeImage(img) }
                     }
@@ -1230,17 +1203,114 @@ struct TrackerMealRow: View {
 }
 
 struct WaterView: View {
+    @AppStorage("waterIntakeML") private var waterIntakeML = 0
+    @AppStorage("waterGoalML") private var waterGoalML = 3000
+    @AppStorage("waterNotificationsEnabled") private var notificationsEnabled = true
+
     var body: some View {
-        VStack { Text("Water Tracking - coming soon").foregroundColor(.secondary); Spacer() }
-            .padding()
+        let progress = min(1, Double(waterIntakeML) / Double(max(waterGoalML, 1)))
+        ZStack {
+            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Hydration check-in").font(.system(size: 32, weight: .bold, design: .rounded))
+                        Text("Stay refreshed through your workday.").font(.subheadline).foregroundColor(.secondary)
+                    }
+                    VStack(spacing: 14) {
+                        HStack {
+                            Image(systemName: "drop.fill").font(.title).foregroundColor(.white)
+                            Spacer()
+                            Text("TODAY").font(.caption2.weight(.bold)).foregroundColor(.white.opacity(0.75))
+                        }
+                        Text("\(waterIntakeML / 1000, specifier: "%.1f") L").font(.system(size: 44, weight: .bold, design: .rounded)).foregroundColor(.white)
+                        Text("of \(waterGoalML / 1000, specifier: "%.1f") L goal").font(.subheadline).foregroundColor(.white.opacity(0.8))
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(Color.white.opacity(0.25))
+                                Capsule().fill(Color.white).frame(width: geometry.size.width * progress)
+                            }
+                        }.frame(height: 10)
+                    }
+                    .padding(22)
+                    .background(LinearGradient(colors: [.primaryOrange, Color(red: 0.94, green: 0.30, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    HStack(spacing: 12) {
+                        WaterAddButton(amount: 250, action: { addWater(250) })
+                        WaterAddButton(amount: 500, action: { addWater(500) })
+                    }
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Label("Workday reminders", systemImage: "bell.fill").font(.headline)
+                            Spacer()
+                            Toggle("Reminders", isOn: $notificationsEnabled)
+                                .labelsHidden().tint(.primaryOrange)
+                                .onChange(of: notificationsEnabled) { _, enabled in
+                                    Task { await WaterReminderScheduler.update(enabled: enabled) }
+                                }
+                        }
+                        Text(notificationsEnabled ? "Gentle reminders are scheduled from 9 AM to 5 PM." : "Reminders are currently paused.")
+                            .font(.caption).foregroundColor(.secondary)
+                        Text("A 3 L goal is a practical default for a desk-based workday, but your ideal amount varies with body size, activity, climate, and medical needs.")
+                            .font(.caption).foregroundColor(.secondary)
+                    }
+                    .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
+                    Button("Reset today") { waterIntakeML = 0 }
+                        .font(.subheadline.weight(.semibold)).foregroundColor(.red).frame(maxWidth: .infinity)
+                }
+                .padding(20)
+            }
+        }
+        .task { if notificationsEnabled { await WaterReminderScheduler.update(enabled: true) } }
     }
+
+    private func addWater(_ amount: Int) {
+        waterIntakeML = min(waterGoalML, waterIntakeML + amount)
+    }
+}
+
+struct WaterAddButton: View {
+    let amount: Int
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Label("+\(amount) ml", systemImage: "plus.circle.fill")
+                .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 8)
+        }
+        .buttonStyle(.borderedProminent).tint(.primaryOrange)
+    }
+}
+
+enum WaterReminderScheduler {
+    static func update(enabled: Bool) async {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: reminderIDs)
+        guard enabled else { return }
+        let settings = await center.notificationSettings()
+        if settings.authorizationStatus == .notDetermined {
+            _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        }
+        let refreshed = await center.notificationSettings()
+        guard refreshed.authorizationStatus == .authorized else { return }
+        for hour in [9, 11, 13, 15, 17] {
+            let content = UNMutableNotificationContent()
+            content.title = "Hydration break"
+            content.body = "Take a moment to drink some water."
+            content.sound = .default
+            var components = DateComponents()
+            components.hour = hour
+            let request = UNNotificationRequest(identifier: "water-reminder-\(hour)", content: content, trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true))
+            try? await center.add(request)
+        }
+    }
+
+    private static let reminderIDs = ["water-reminder-9", "water-reminder-11", "water-reminder-13", "water-reminder-15", "water-reminder-17"]
 }
 
 struct ProfileView: View {
     @EnvironmentObject var store: AppStore
     @State private var name = ""
     @State private var email = ""
-    @State private var geminiAPIKey = ""
     @State private var gender = ""
     @State private var age = 30
     @State private var weight = 70
@@ -1252,8 +1322,6 @@ struct ProfileView: View {
     @State private var savedMessage = false
     @State private var isEditing = false
     @State private var targetWarning = ""
-
-    private let genders = ["Female", "Male", "Non-binary", "Prefer not to say"]
 
     var body: some View {
         ZStack {
@@ -1307,7 +1375,6 @@ struct ProfileView: View {
                             }
                             RegistrationInputField(title: "Name", placeholder: "Your name", icon: "person.fill", text: $name, isEditable: isEditing)
                             RegistrationInputField(title: "Email", placeholder: "Email address", icon: "envelope.fill", text: $email, isEmail: true, isEditable: isEditing)
-                            APIKeyInputField(value: $geminiAPIKey, isEditable: isEditing)
                             ProfileGenderField(gender: $gender, isEditable: isEditing)
                             ProfilePickerField(title: "Age", unit: "years", icon: "calendar", value: $age, range: 13...100, isEditable: isEditing)
                             ProfilePickerField(title: "Weight", unit: "kg", icon: "scalemass.fill", value: $weight, range: 30...250, isEditable: isEditing)
@@ -1385,7 +1452,6 @@ struct ProfileView: View {
         guard name.isEmpty else { return }
         name = profile.name
         email = profile.email
-        geminiAPIKey = profile.geminiAPIKey ?? ""
         gender = profile.gender ?? ""
         age = profile.age ?? 30
         weight = Int(profile.weightKg ?? 70)
@@ -1401,7 +1467,6 @@ struct ProfileView: View {
         guard var profile = store.profile else { return }
         profile.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         profile.email = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        profile.geminiAPIKey = geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         profile.gender = gender.isEmpty ? nil : gender
         profile.age = age
         profile.weightKg = Double(weight)
@@ -1532,5 +1597,77 @@ struct ProfileTargetBadge: View {
         .padding(.vertical, 12)
         .background(color.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+struct SettingsView: View {
+    @EnvironmentObject var store: AppStore
+    @AppStorage("waterNotificationsEnabled") private var notificationsEnabled = true
+    @AppStorage("waterGoalML") private var waterGoalML = 3000
+    @State private var geminiAPIKey = ""
+    @State private var saved = false
+
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Settings").font(.system(size: 32, weight: .bold, design: .rounded))
+                        Text("Make Btracker fit your workday.").font(.subheadline).foregroundColor(.secondary)
+                    }
+                    VStack(alignment: .leading, spacing: 16) {
+                        Label("AI nutrition assistant", systemImage: "sparkles").font(.headline)
+                        Text("Your key stays on this device and is used for food analysis and daily motivation.")
+                            .font(.caption).foregroundColor(.secondary)
+                        APIKeyInputField(value: $geminiAPIKey, isEditable: true)
+                        Button(action: saveSettings) {
+                            Label(saved ? "Saved" : "Save API key", systemImage: saved ? "checkmark.circle.fill" : "square.and.arrow.down.fill")
+                                .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 4)
+                        }
+                        .buttonStyle(.borderedProminent).tint(.primaryOrange)
+                    }
+                    .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
+                    VStack(alignment: .leading, spacing: 16) {
+                        Label("Hydration reminders", systemImage: "drop.fill").font(.headline)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Workday notifications").font(.subheadline.weight(.medium))
+                                Text("9 AM, 11 AM, 1 PM, 3 PM, and 5 PM").font(.caption).foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Toggle("Water reminders", isOn: $notificationsEnabled)
+                                .labelsHidden().tint(.primaryOrange)
+                                .onChange(of: notificationsEnabled) { _, enabled in
+                                    Task { await WaterReminderScheduler.update(enabled: enabled) }
+                                }
+                        }
+                        HStack {
+                            Text("Daily goal").font(.subheadline.weight(.medium))
+                            Spacer()
+                            Picker("Daily goal", selection: $waterGoalML) {
+                                Text("2 L").tag(2000)
+                                Text("2.5 L").tag(2500)
+                                Text("3 L").tag(3000)
+                                Text("3.5 L").tag(3500)
+                                Text("4 L").tag(4000)
+                            }
+                            .pickerStyle(.menu).tint(.primaryOrange)
+                        }
+                    }
+                    .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+                .padding(20)
+            }
+        }
+        .onAppear { geminiAPIKey = store.profile?.geminiAPIKey ?? "" }
+    }
+
+    private func saveSettings() {
+        guard var profile = store.profile else { return }
+        let key = geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        profile.geminiAPIKey = key.isEmpty ? nil : key
+        store.saveProfile(profile)
+        saved = true
     }
 }

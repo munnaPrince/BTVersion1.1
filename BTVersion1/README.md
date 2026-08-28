@@ -6,19 +6,19 @@ Main highlights:
 
 - Registration & onboarding
 - Calorie & protein target calculation
-- Image-based food scan (mock analysis for now)
+- Gemini-powered image-based food scan with a local fallback
 - Core Data persistence (programmatically-created model)
 - Organized source layout and a minimal Xcode project (`Btracker.xcodeproj`)
 
 Project layout (key files):
 
 - `BtrackerApp.swift` — App entry, injects `AppStore` and Core Data context
-- `Models.swift` — lightweight structs used by the UI
+- `Models 2.swift` — lightweight structs used by the UI
 - `CoreDataStack.swift` — programmatic Core Data model and container
 - `ManagedObjects.swift` — `NSManagedObject` subclasses + mapping helpers
 - `DataService.swift` — Core Data CRUD wrapper
 - `Storage.swift` — `AppStore` observable object backed by `DataService`
-- `Views.swift`, `ImagePicker.swift`, `MacroCalculator.swift` — UI and helpers
+- `Views.swift`, `ImagePicker.swift`, `MacroTargets.swift` — UI and helpers
 
 New folder layout (production-ready):
 
@@ -38,5 +38,5 @@ How to open and run
 Notes & next steps
 
 - The Core Data model is created programmatically to keep the repo portable without an `.xcdatamodeld` file. It defines `CDUserProfile` and `CDFoodEntry` entities.
-- Image analysis is still a mock — when you're ready we can integrate a CoreML food recognizer or a backend inference endpoint.
+- Gemini API key configuration is available in the Settings tab; image analysis falls back to a local estimate when Gemini is unavailable.
 - I added a minimal pbxproj that references the source files; for complex app configurations (multiple targets, app groups, push entitlements) we'll expand the project file in Xcode.
