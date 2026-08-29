@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UserNotifications
+import UniformTypeIdentifiers
 
 // MARK: - Theme
 extension Color {
@@ -145,366 +146,6 @@ struct RegistrationInputField: View {
     }
 }
 
-/*
-struct OnboardingView: View {
-    @EnvironmentObject var store: AppStore
-    @State private var age = "30"
-    @State private var weight = "70"
-            VStack(alignment: .leading, spacing: 20) {
-
-    var body: some View {
-                    let consumed = consumedToday(store: store)
-                    let firstName = p.name.split(separator: " ").first.map(String.init) ?? "there"
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(greeting)
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundColor(.secondary)
-                                Text(firstName)
-                                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                            }
-                            Spacer()
-                            Image(systemName: "leaf.fill")
-                                .font(.title2)
-                                .foregroundColor(.primaryOrange)
-                                .padding(12)
-                                .background(Color.primaryOrange.opacity(0.12))
-                                .clipShape(Circle())
-                VStack(alignment: .leading, spacing: 24) {
-                        Text(goalLabel(for: p.goal))
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(.primaryOrange)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.primaryOrange.opacity(0.12))
-                            .clipShape(Capsule())
-                    VStack(alignment: .leading, spacing: 10) {
-
-                    VStack(spacing: 16) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("TODAY'S FUEL")
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundColor(.white.opacity(0.75))
-                                Text("Keep your momentum going")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                            }
-                            Spacer()
-                            Image(systemName: "flame.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                        }
-                        HStack(spacing: 20) {
-                            RingView(progress: progressFraction(store: store, targetCalories: t.calories), label: "\(consumed)", sublabel: "kcal eaten")
-                                .frame(width: 142, height: 142)
-                            VStack(alignment: .leading, spacing: 12) {
-                                HomeStat(label: "Remaining", value: "\(max(0, t.calories - consumed)) kcal")
-                                HomeStat(label: "Daily target", value: "\(t.calories) kcal")
-                            }
-                        }
-                            Spacer()
-                    .padding(20)
-                    .background(LinearGradient(colors: [Color.primaryOrange, Color(red: 0.96, green: 0.35, blue: 0.25)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .shadow(color: Color.primaryOrange.opacity(0.25), radius: 14, y: 8)
-
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack {
-                            Text("Your daily targets")
-                                .font(.headline)
-                            Spacer()
-                            Image(systemName: "chart.bar.xaxis")
-                                .foregroundColor(.accentBlue)
-                        }
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            HomeMacroTile(title: "Protein", value: "\(t.proteinGrams) g", icon: "bolt.fill", color: .accentBlue)
-                            HomeMacroTile(title: "Carbs", value: "\(t.carbsGrams) g", icon: "leaf.fill", color: .green)
-                            HomeMacroTile(title: "Fats", value: "\(t.fatsGrams) g", icon: "drop.fill", color: .purple)
-                            HomeMacroTile(title: "Logged", value: "\(store.entries.count) items", icon: "checkmark.circle.fill", color: .primaryOrange)
-                        }
-                    }
-
-                    if store.entries.isEmpty {
-                        HStack(spacing: 14) {
-                            Image(systemName: "fork.knife.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(.accentBlue)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Ready for your first entry?").font(.subheadline.weight(.semibold))
-                                Text("Scan a meal to start tracking today.").font(.caption).foregroundColor(.secondary)
-                            }
-                            Spacer()
-                        }
-                        .padding(16)
-                        .background(Color.accentBlue.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                            Text("Almost there")
-                                .foregroundColor(.secondary)
-            .padding(20)
-                        Text("Build your baseline")
-        .background(Color(red: 0.98, green: 0.98, blue: 0.97).ignoresSafeArea())
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-
-    private var greeting: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case 5..<12: return "Good morning"
-        case 12..<18: return "Good afternoon"
-        default: return "Good evening"
-        }
-    }
-
-    private func goalLabel(for goal: GoalType?) -> String {
-        switch goal {
-        case .muscleGain: return "Muscle gain focus"
-        case .weightLoss: return "Weight loss focus"
-        default: return "Balanced routine"
-        }
-    }
-                        Text("A few details help us shape your daily targets around you.")
-
-struct HomeStat: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption).foregroundColor(.white.opacity(0.75))
-            Text(value).font(.subheadline.weight(.bold)).foregroundColor(.white)
-        }
-    }
-}
-
-struct HomeMacroTile: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .frame(width: 30, height: 30)
-                .background(color.opacity(0.12))
-                .clipShape(Circle())
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.caption).foregroundColor(.secondary)
-                Text(value).font(.subheadline.weight(.bold))
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-}
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Your measurements")
-                            .font(.headline)
-                        OnboardingMetricField(title: "Age", value: $age, unit: "years", icon: "calendar", isDecimal: false)
-                        OnboardingMetricField(title: "Weight", value: $weight, unit: "kg", icon: "scalemass.fill", isDecimal: true)
-                        OnboardingMetricField(title: "Height", value: $height, unit: "cm", icon: "ruler.fill", isDecimal: true)
-                    }
-                    .padding(20)
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-
-                    VStack(alignment: .leading, spacing: 14) {
-                        Label("What is your focus?", systemImage: "target")
-                            .font(.headline)
-                        Picker("Goal", selection: $goal) {
-                            Text("Maintain").tag(GoalType.maintain)
-                            Text("Muscle gain").tag(GoalType.muscleGain)
-                            Text("Weight loss").tag(GoalType.weightLoss)
-                        }
-                        .pickerStyle(.segmented)
-                        Text(goalDescription)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-
-                    Button(action: {
-                        guard var p = store.profile else { return }
-                        p.age = Int(age) ?? 30
-                        p.weightKg = Double(weight) ?? 70
-                        p.heightCm = Double(height) ?? 170
-                        p.goal = goal
-                        store.saveProfile(p)
-                    }) {
-                        Label("Continue to Btracker", systemImage: "arrow.right.circle.fill")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 4)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.accentBlue)
-                }
-                .padding(24)
-            }
-        }
-    }
-
-    private var goalDescription: String {
-        switch goal {
-        case .maintain: return "Keep your current routine balanced."
-        case .muscleGain: return "Prioritize fuel for strength and growth."
-        case .weightLoss: return "Create a steady, mindful calorie target."
-        }
-    }
-}
-
-struct OnboardingMetricField: View {
-    let title: String
-    @Binding var value: String
-    let unit: String
-    let icon: String
-    let isDecimal: Bool
-    var isEditable = true
-
-    init(title: String, value: Binding<String>, unit: String, icon: String, isDecimal: Bool, isEditable: Bool = true) {
-        self.title = title
-        self._value = value
-        self.unit = unit
-        self.icon = icon
-        self.isDecimal = isDecimal
-        self.isEditable = isEditable
-    }
-    var isEditable = true
-
-    init(title: String, value: Binding<String>, unit: String, icon: String, isDecimal: Bool, isEditable: Bool = true) {
-        self.title = title
-        self._value = value
-        self.unit = unit
-        self.icon = icon
-        self.isDecimal = isDecimal
-        self.isEditable = isEditable
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.accentBlue)
-                .frame(width: 24)
-            Text(title)
-                .font(.subheadline.weight(.medium))
-            Spacer()
-            TextField("0", text: $value)
-                .keyboardType(isDecimal ? .decimalPad : .numberPad)
-                .multilineTextAlignment(.trailing)
-                .font(.headline)
-                .frame(width: 80)
-            Text(unit)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .frame(width: 42, alignment: .leading)
-        }
-        .padding(.horizontal, 14)
-        .frame(minHeight: 58)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(value.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
-        .opacity(isEditable ? 1 : 0.72)
-        .disabled(!isEditable)
-    }
-}
-
-struct ProfilePickerField: View {
-    let title: String
-    let unit: String
-    let icon: String
-    @Binding var value: Int
-    let range: ClosedRange<Int>
-    let isEditable: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).foregroundColor(.accentBlue).frame(width: 24)
-            Text(title).font(.subheadline.weight(.medium))
-            Spacer()
-            Picker(title, selection: $value) {
-                ForEach(Array(range), id: \.self) { number in
-                    Text("\(number)").tag(number)
-                }
-            }
-            .pickerStyle(.menu)
-            .tint(.primary)
-            .disabled(!isEditable)
-            Text(unit).font(.caption.weight(.semibold)).foregroundColor(.secondary).frame(width: 42, alignment: .leading)
-        }
-        .padding(.horizontal, 14)
-        .frame(minHeight: 58)
-        .background(Color.white.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(isEditable ? 0.45 : 0.12), lineWidth: 1.5))
-        .opacity(isEditable ? 1 : 0.72)
-    }
-}
-
-struct MainTabView: View {
-    var body: some View {
-        TabView {
-            HomeView().tabItem { Label("Home", systemImage: "house.fill") }
-            ScanView().tabItem { Label("Scan", systemImage: "camera.fill") }
-            TrackerView().tabItem { Label("Tracker", systemImage: "chart.bar.fill") }
-            WaterView().tabItem { Label("Water", systemImage: "drop.fill") }
-            ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }
-            SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }
-        }
-        .tint(.primaryOrange)
-    }
-}
-
-struct HomeView: View {
-    @EnvironmentObject var store: AppStore
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                HStack { Text("Good evening") .font(.title2).bold(); Spacer() }
-                if let p = store.profile {
-                    let t = MacroCalculator.targets(for: p)
-                    Card {
-                        VStack(spacing: 12) {
-                            RingView(progress: progressFraction(store: store, targetCalories: t.calories), label: "\(consumedToday(store: store)) kcal", sublabel: "\(max(0, t.calories - consumedToday(store: store))) left")
-                                .frame(height:180)
-                            HStack { Text("Daily goal").foregroundColor(.secondary); Spacer(); Text("\(t.calories) kcal").bold() }
-                        }
-                    }
-                    .padding(.bottom, 4)
-                    HStack(spacing: 12) {
-                        VStack(alignment:.leading) { Text("Protein target").font(.caption); Text("\(t.proteinGrams) g").bold() }
-                        Spacer()
-                    }
-                }
-                Spacer()
-            }
-            .padding()
-        }
-    }
-
-    func consumedToday(store: AppStore) -> Int {
-        let today = Calendar.current.startOfDay(for: Date())
-        return store.entries.filter { Calendar.current.startOfDay(for: $0.date) == today }.reduce(0) { $0 + $1.calories }
-    }
-
-    func progressFraction(store: AppStore, targetCalories: Int) -> Double {
-        let consumed = consumedToday(store: store)
-        guard targetCalories > 0 else { return 0 }
-        return min(1.0, Double(consumed) / Double(targetCalories))
-    }
-}
-
-*/
 struct OnboardingView: View {
     @EnvironmentObject var store: AppStore
     @State private var age = "30"
@@ -1208,7 +849,8 @@ struct WaterView: View {
     @AppStorage("waterNotificationsEnabled") private var notificationsEnabled = true
 
     var body: some View {
-        let progress = min(1, Double(waterIntakeML) / Double(max(waterGoalML, 1)))
+        let goalML = max(waterGoalML, 3000)
+        let progress = min(1, Double(waterIntakeML) / Double(goalML))
         ZStack {
             LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
             ScrollView {
@@ -1223,8 +865,8 @@ struct WaterView: View {
                             Spacer()
                             Text("TODAY").font(.caption2.weight(.bold)).foregroundColor(.white.opacity(0.75))
                         }
-                        Text("\(waterIntakeML / 1000, specifier: "%.1f") L").font(.system(size: 44, weight: .bold, design: .rounded)).foregroundColor(.white)
-                        Text("of \(waterGoalML / 1000, specifier: "%.1f") L goal").font(.subheadline).foregroundColor(.white.opacity(0.8))
+                        Text("\(Double(waterIntakeML) / 1000.0, specifier: "%.1f") L").font(.system(size: 44, weight: .bold, design: .rounded)).foregroundColor(.white)
+                        Text("of \(Double(goalML) / 1000.0, specifier: "%.1f") L goal").font(.subheadline).foregroundColor(.white.opacity(0.8))
                         GeometryReader { geometry in
                             ZStack(alignment: .leading) {
                                 Capsule().fill(Color.white.opacity(0.25))
@@ -1265,7 +907,7 @@ struct WaterView: View {
     }
 
     private func addWater(_ amount: Int) {
-        waterIntakeML = min(waterGoalML, waterIntakeML + amount)
+        waterIntakeML = min(max(waterGoalML, 3000), waterIntakeML + amount)
     }
 }
 
@@ -1322,6 +964,8 @@ struct ProfileView: View {
     @State private var savedMessage = false
     @State private var isEditing = false
     @State private var targetWarning = ""
+    @State private var isExportingNutrition = false
+    @State private var nutritionExportDocument = NutritionCSVDocument()
 
     var body: some View {
         ZStack {
@@ -1437,6 +1081,34 @@ struct ProfileView: View {
                         .disabled(!isEditing)
                         .opacity(isEditing ? 1 : 0.55)
 
+                        VStack(alignment: .leading, spacing: 14) {
+                            Label("Nutrition history", systemImage: "arrow.down.doc.fill")
+                                .font(.headline)
+                            Text("Download every saved meal with its date and nutrition values.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Button(action: {
+                                nutritionExportDocument = NutritionCSVDocument(entries: store.entries)
+                                isExportingNutrition = true
+                            }) {
+                                Label("Download nutrition CSV", systemImage: "arrow.down.circle.fill")
+                                    .font(.subheadline.weight(.semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 4)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.primaryOrange)
+                            .disabled(store.entries.isEmpty)
+                            if store.entries.isEmpty {
+                                Text("Add a meal before downloading your nutrition history.")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(20)
+                        .background(.regularMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+
                         Button("Log out") { store.logout() }
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(.red)
@@ -1446,6 +1118,12 @@ struct ProfileView: View {
                 .padding(20)
             }
         }
+        .fileExporter(
+            isPresented: $isExportingNutrition,
+            document: nutritionExportDocument,
+            contentType: .commaSeparatedText,
+            defaultFilename: "btracker-nutrition-history"
+        ) { _ in }
     }
 
     private func loadProfile(_ profile: UserProfile) {
@@ -1494,6 +1172,44 @@ struct ProfileView: View {
         }
         store.saveProfile(profile)
         withAnimation { savedMessage = true }
+    }
+}
+
+struct NutritionCSVDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.commaSeparatedText] }
+
+    private var contents: String
+
+    init() {
+        contents = "Date,Meal,Calories (kcal),Protein (g),Carbs (g),Fat (g)\n"
+    }
+
+    init(entries: [FoodEntry]) {
+        let formatter = ISO8601DateFormatter()
+        let rows = entries.sorted { $0.date < $1.date }.map { entry in
+            [
+                formatter.string(from: entry.date),
+                Self.escape(entry.name),
+                String(entry.calories),
+                String(entry.proteinGrams),
+                String(entry.carbsGrams),
+                String(entry.fatsGrams)
+            ].joined(separator: ",")
+        }
+        contents = (["Date,Meal,Calories (kcal),Protein (g),Carbs (g),Fat (g)"] + rows).joined(separator: "\n") + "\n"
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        contents = String(data: configuration.file.regularFileContents ?? Data(), encoding: .utf8) ?? ""
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: Data(contents.utf8))
+    }
+
+    private static func escape(_ value: String) -> String {
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        return "\"\(escaped)\""
     }
 }
 
@@ -1660,7 +1376,10 @@ struct SettingsView: View {
                 .padding(20)
             }
         }
-        .onAppear { geminiAPIKey = store.profile?.geminiAPIKey ?? "" }
+        .onAppear {
+            geminiAPIKey = store.profile?.geminiAPIKey ?? ""
+            if waterGoalML < 1 { waterGoalML = 3000 }
+        }
     }
 
     private func saveSettings() {
