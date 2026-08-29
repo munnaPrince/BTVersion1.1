@@ -32,6 +32,7 @@ public class CDFoodEntry: NSManagedObject {
     @NSManaged public var carbsGrams: Int32
     @NSManaged public var proteinGrams: Int32
     @NSManaged public var fatsGrams: Int32
+    @NSManaged public var source: String
 }
 
 extension CDUserProfile {
@@ -75,11 +76,13 @@ extension CDFoodEntry {
         obj.carbsGrams = Int32(model.carbsGrams)
         obj.proteinGrams = Int32(model.proteinGrams)
         obj.fatsGrams = Int32(model.fatsGrams)
+        obj.source = model.source.rawValue
         return obj
     }
 
     func toModel() -> FoodEntry {
-        return FoodEntry(id: id, date: date, name: name, calories: Int(calories), carbsGrams: Int(carbsGrams), proteinGrams: Int(proteinGrams), fatsGrams: Int(fatsGrams))
+        let resolvedSource = source.isEmpty ? EntrySource.photo : (EntrySource(rawValue: source) ?? .photo)
+        return FoodEntry(id: id, date: date, name: name, calories: Int(calories), carbsGrams: Int(carbsGrams), proteinGrams: Int(proteinGrams), fatsGrams: Int(fatsGrams), source: resolvedSource)
     }
 }
 

@@ -34,6 +34,11 @@ struct UserProfile: Codable, Equatable {
     }
 }
 
+enum EntrySource: String, Codable {
+    case photo
+    case manual
+}
+
 struct FoodEntry: Codable, Identifiable, Equatable {
     let id: UUID
     var date: Date
@@ -42,8 +47,9 @@ struct FoodEntry: Codable, Identifiable, Equatable {
     var carbsGrams: Int
     var proteinGrams: Int
     var fatsGrams: Int
+    var source: EntrySource
 
-    init(id: UUID = UUID(), date: Date = Date(), name: String, calories: Int, carbsGrams: Int, proteinGrams: Int, fatsGrams: Int) {
+    init(id: UUID = UUID(), date: Date = Date(), name: String, calories: Int, carbsGrams: Int, proteinGrams: Int, fatsGrams: Int, source: EntrySource = .photo) {
         self.id = id
         self.date = date
         self.name = name
@@ -51,5 +57,6 @@ struct FoodEntry: Codable, Identifiable, Equatable {
         self.carbsGrams = carbsGrams
         self.proteinGrams = proteinGrams
         self.fatsGrams = fatsGrams
+        self.source = source
     }
 }

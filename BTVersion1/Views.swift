@@ -15,6 +15,28 @@ extension Color {
     static let accentBlue = Color(red: 0.96, green: 0.38, blue: 0.24)
 }
 
+enum AppTheme: String, CaseIterable {
+    case system
+    case light
+    case dark
+
+    var title: String {
+        switch self {
+        case .system: return "Same as mobile theme"
+        case .light: return "Light theme"
+        case .dark: return "Dark theme"
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+}
+
 struct ContentView: View {
     @EnvironmentObject var store: AppStore
 
@@ -41,73 +63,86 @@ struct LoginView: View {
     private let genders = ["Female", "Male", "Non-binary", "Prefer not to say"]
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(red: 1.0, green: 0.96, blue: 0.91), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                LinearGradient(colors: [Color(red: 1.0, green: 0.96, blue: 0.91), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Image(systemName: "leaf.fill")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primaryOrange)
-                        Text("Welcome to Btracker")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                        Text("Create your profile and make every meal count.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Let’s get to know you")
-                            .font(.headline)
-                        RegistrationInputField(title: "Name", placeholder: "What should we call you?", icon: "person.fill", text: $name)
-                        RegistrationInputField(title: "Email", placeholder: "you@example.com", icon: "envelope.fill", text: $email, isEmail: true)
-                        HStack(spacing: 12) {
-                            Image(systemName: "person.2.fill")
-                                .font(.system(size: 16, weight: .semibold))
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: "leaf.fill")
+                                .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.primaryOrange)
-                                .frame(width: 24)
-                            Picker("Gender", selection: $gender) {
-                                Text("How do you identify?").tag("")
-                                ForEach(genders, id: \.self) { option in
-                                    Text(option).tag(option)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .tint(gender.isEmpty ? .secondary : .primary)
-                            Spacer(minLength: 0)
+                            Text("Welcome to Btracker")
+                                .font(.system(size: min(34, max(28, geometry.size.width * 0.085)), weight: .bold, design: .rounded))
+                            Text("Create your profile and make every meal count.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 58)
-                        .background(Color.white.opacity(0.9))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primaryOrange.opacity(gender.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
 
-                        Button(action: {
-                            let profile = UserProfile(name: name.trimmingCharacters(in: .whitespacesAndNewlines), email: email.trimmingCharacters(in: .whitespacesAndNewlines), gender: gender)
-                            store.saveProfile(profile)
-                        }) {
-                            Label("Create profile", systemImage: "arrow.right.circle.fill")
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Let’s get to know you")
                                 .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.primaryOrange)
-                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || gender.isEmpty)
-                    }
-                    .padding(20)
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(color: Color.primaryOrange.opacity(0.12), radius: 18, y: 8)
+                            RegistrationInputField(title: "Name", placeholder: "What should we call you?", icon: "person.fill", text: $name)
+                            RegistrationInputField(title: "Email", placeholder: "you@example.com", icon: "envelope.fill", text: $email, isEmail: true)
+                            HStack(spacing: 12) {
+                                Image(systemName: "person.2.fill")
+                                    .foregroundColor(.primaryOrange)
+                                    .frame(width: 28, height: 28)
+                                    .background(Color.primaryOrange.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                    Text("Your information stays on this device.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("GENDER")
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundColor(.secondary)
+
+                                    Picker("Gender", selection: $gender) {
+                                        Text("How do you identify?").tag("")
+                                        ForEach(genders, id: \.self) { option in
+                                            Text(option).tag(option)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .labelsHidden()
+                                    .tint(gender.isEmpty ? .secondary : .primary)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 62)
+                            .background(Color.white.opacity(0.9))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primaryOrange.opacity(gender.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
+
+                            Button(action: {
+                                let profile = UserProfile(name: name.trimmingCharacters(in: .whitespacesAndNewlines), email: email.trimmingCharacters(in: .whitespacesAndNewlines), gender: gender)
+                                store.saveProfile(profile)
+                            }) {
+                                Label("Create profile", systemImage: "arrow.right.circle.fill")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 4)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.primaryOrange)
+                            .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || gender.isEmpty)
+                        }
+                        .padding(20)
+                        .background(.regularMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(color: Color.primaryOrange.opacity(0.12), radius: 18, y: 8)
+
+                        Text("Your information stays on this device.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .padding(24)
             }
         }
     }
@@ -126,7 +161,10 @@ struct RegistrationInputField: View {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.primaryOrange)
-                .frame(width: 24)
+                .frame(width: 28, height: 28)
+                .background(Color.primaryOrange.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(title.uppercased())
                     .font(.caption2.weight(.bold))
@@ -139,7 +177,7 @@ struct RegistrationInputField: View {
             }
         }
         .padding(.horizontal, 14)
-        .frame(minHeight: 58)
+        .frame(minHeight: 62)
         .background(Color.white.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primaryOrange.opacity(text.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
@@ -148,60 +186,68 @@ struct RegistrationInputField: View {
 
 struct OnboardingView: View {
     @EnvironmentObject var store: AppStore
-    @State private var age = "30"
-    @State private var weight = "70"
-    @State private var height = "170"
+    @State private var age = 30
+    @State private var weight = 70
+    @State private var height = 170
     @State private var goal: GoalType = .maintain
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Label("STEP 1 OF 1", systemImage: "sparkles").font(.caption.weight(.bold)).foregroundColor(.accentBlue)
-                            Spacer()
-                            Text("Almost there").font(.caption).foregroundColor(.secondary)
+        GeometryReader { geometry in
+            ZStack {
+                LinearGradient(colors: [Color(red: 0.97, green: 0.94, blue: 0.90), Color(red: 0.99, green: 0.99, blue: 0.98)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Label("STEP 1 OF 1", systemImage: "sparkles").font(.caption.weight(.bold)).foregroundColor(.accentBlue)
+                                Spacer()
+                                Text("Almost there").font(.caption).foregroundColor(.secondary)
+                            }
+                            Text("Build your baseline")
+                                .font(.system(size: min(46, max(30, geometry.size.width * 0.105)), weight: .bold, design: .rounded))
+                                .lineLimit(2)
+                            Text("A few details help us shape your daily targets around you.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
-                        Text("Build your baseline").font(.system(size: 34, weight: .bold, design: .rounded))
-                        Text("A few details help us shape your daily targets around you.").font(.subheadline).foregroundColor(.secondary)
-                    }
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Your measurements").font(.headline)
-                        OnboardingMetricField(title: "Age", value: $age, unit: "years", icon: "calendar", isDecimal: false)
-                        OnboardingMetricField(title: "Weight", value: $weight, unit: "kg", icon: "scalemass.fill", isDecimal: true)
-                        OnboardingMetricField(title: "Height", value: $height, unit: "cm", icon: "ruler.fill", isDecimal: true)
-                    }
-                    .padding(20)
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    VStack(alignment: .leading, spacing: 14) {
-                        Label("What is your focus?", systemImage: "target").font(.headline)
-                        Picker("Goal", selection: $goal) {
-                            Text("Maintain").tag(GoalType.maintain)
-                            Text("Muscle gain").tag(GoalType.muscleGain)
-                            Text("Weight loss").tag(GoalType.weightLoss)
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("Your measurements").font(.title2.weight(.bold))
+                            OnboardingPickerField(title: "Age", unit: "years", icon: "calendar", range: 13...100, value: $age)
+                            OnboardingPickerField(title: "Weight", unit: "kg", icon: "scalemass.fill", range: 30...250, value: $weight)
+                            OnboardingPickerField(title: "Height", unit: "cm", icon: "ruler.fill", range: 100...230, value: $height)
                         }
-                        .pickerStyle(.segmented)
-                        Text(goalDescription).font(.caption).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .center)
+                        .padding(18)
+                        .background(Color(UIColor.systemGray5).opacity(0.75))
+                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                        VStack(alignment: .leading, spacing: 14) {
+                            Label("What is your focus?", systemImage: "target").font(.headline)
+                            Picker("Goal", selection: $goal) {
+                                Text("Maintain").tag(GoalType.maintain)
+                                Text("Muscle gain").tag(GoalType.muscleGain)
+                                Text("Weight loss").tag(GoalType.weightLoss)
+                            }
+                            .pickerStyle(.segmented)
+                            Text(goalDescription).font(.caption).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        Button(action: {
+                            guard var profile = store.profile else { return }
+                            profile.age = age
+                            profile.weightKg = Double(weight)
+                            profile.heightCm = Double(height)
+                            profile.goal = goal
+                            store.saveProfile(profile)
+                        }) {
+                            Label("Continue to Btracker", systemImage: "arrow.right.circle.fill")
+                                .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 4)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.accentBlue)
                     }
-                    Button(action: {
-                        guard var profile = store.profile else { return }
-                        profile.age = Int(age) ?? 30
-                        profile.weightKg = Double(weight) ?? 70
-                        profile.heightCm = Double(height) ?? 170
-                        profile.goal = goal
-                        store.saveProfile(profile)
-                    }) {
-                        Label("Continue to Btracker", systemImage: "arrow.right.circle.fill")
-                            .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 4)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.accentBlue)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .padding(24)
             }
         }
     }
@@ -235,19 +281,87 @@ struct OnboardingMetricField: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 16, weight: .semibold)).foregroundColor(.accentBlue).frame(width: 24)
-            Text(title).font(.subheadline.weight(.medium))
-            Spacer()
-            TextField("0", text: $value).keyboardType(isDecimal ? .decimalPad : .numberPad).multilineTextAlignment(.trailing).font(.headline).frame(width: 80)
-            Text(unit).font(.caption.weight(.semibold)).foregroundColor(.secondary).frame(width: 42, alignment: .leading)
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.accentBlue)
+                .frame(width: 28, height: 28)
+                .background(Color.accentBlue.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: 120, alignment: .leading)
+
+            Spacer(minLength: 0)
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                TextField("0", text: $value)
+                    .keyboardType(isDecimal ? .decimalPad : .numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .font(.headline)
+                    .frame(minWidth: 56, maxWidth: 90)
+
+                Text(unit)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
         }
         .padding(.horizontal, 14)
-        .frame(minHeight: 58)
+        .frame(minHeight: 62)
         .background(Color.white.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(value.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
         .opacity(isEditable ? 1 : 0.72)
         .disabled(!isEditable)
+    }
+}
+
+struct OnboardingPickerField: View {
+    let title: String
+    let unit: String
+    let icon: String
+    let range: ClosedRange<Int>
+    @Binding var value: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(.accentBlue)
+                .frame(width: 28, height: 28)
+                .background(Color.accentBlue.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 8) {
+                    Picker(title, selection: $value) {
+                        ForEach(Array(range), id: \.self) { number in
+                            Text("\(number)").tag(number)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text(unit)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.primary.opacity(0.75))
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .frame(minHeight: 64)
+        .background(Color(UIColor.systemGray6).opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.accentBlue.opacity(0.35), lineWidth: 1.5))
     }
 }
 
@@ -271,93 +385,115 @@ struct HomeView: View {
     @State private var motivationStatus = "Loading your daily motivation..."
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                if let profile = store.profile {
-                    let targets = MacroCalculator.targets(for: profile)
-                    let consumed = consumedToday(store: store)
-                    let firstName = profile.name.split(separator: " ").first.map(String.init) ?? "there"
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(greeting).font(.subheadline.weight(.medium)).foregroundColor(.secondary)
-                                HStack(spacing: 8) {
-                                    Text(firstName).font(.system(size: 34, weight: .bold, design: .rounded))
-                                    HStack(spacing: 3) {
-                                        Image(systemName: "flame.fill")
-                                        Text("\(NutritionStreakCalculator.currentStreak(entries: store.entries, targets: targets))")
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    if let profile = store.profile {
+                        let targets = MacroCalculator.targets(for: profile)
+                        let consumed = consumedToday(store: store)
+                        let firstName = profile.name.split(separator: " ").first.map(String.init) ?? "there"
+                        let isCompact = geometry.size.width < 390
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(greeting).font(.subheadline.weight(.medium)).foregroundColor(.secondary)
+                                    HStack(spacing: 8) {
+                                        Text(firstName).font(.system(size: 34, weight: .bold, design: .rounded))
+                                        HStack(spacing: 3) {
+                                            Image(systemName: "flame.fill")
+                                            Text("\(NutritionStreakCalculator.currentStreak(entries: store.entries, targets: targets))")
+                                        }
+                                        .font(.subheadline.weight(.bold))
+                                        .foregroundColor(.orange)
                                     }
-                                    .font(.subheadline.weight(.bold))
-                                    .foregroundColor(.orange)
+                                }
+                                Spacer()
+                                Image(systemName: "leaf.circle.fill")
+                                    .font(.system(size: 30, weight: .semibold))
+                                    .foregroundColor(.primaryOrange)
+                                    .frame(width: 56, height: 56)
+                                    .background(Color.primaryOrange.opacity(0.12))
+                                    .clipShape(Circle())
+                            }
+                            Text(goalLabel(for: profile.goal)).font(.caption.weight(.semibold)).foregroundColor(.primaryOrange).padding(.horizontal, 10).padding(.vertical, 6).background(Color.primaryOrange.opacity(0.12)).clipShape(Capsule())
+                        }
+                        HStack(spacing: 12) {
+                            Image(systemName: "quote.opening").font(.title3).foregroundColor(.primaryOrange)
+                            if motivation.isEmpty {
+                                ProgressView()
+                                Text(motivationStatus).font(.subheadline.weight(.medium)).foregroundColor(.secondary)
+                            } else {
+                                Text(motivation).font(.subheadline.weight(.medium))
+                            }
+                            Spacer()
+                        }
+                        .padding(14)
+                        .background(Color.primaryOrange.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        VStack(spacing: 16) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("TODAY'S FUEL").font(.caption2.weight(.bold)).foregroundColor(.white.opacity(0.75))
+                                    Text("Keep your momentum going").font(.headline).foregroundColor(.white)
+                                }
+                                Spacer()
+                                Image(systemName: "flame.fill").font(.title2).foregroundColor(.white)
+                            }
+                            if isCompact {
+                                VStack(alignment: .center, spacing: 14) {
+                                    RingView(progress: progressFraction(store: store, targetCalories: targets.calories), label: "\(consumed)", sublabel: "kcal eaten")
+                                        .frame(maxWidth: .infinity)
+                                        .aspectRatio(1, contentMode: .fit)
+
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HomeStat(label: "Remaining", value: "\(max(0, targets.calories - consumed)) kcal")
+                                        HomeStat(label: "Daily target", value: "\(targets.calories) kcal")
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            } else {
+                                HStack(alignment: .center, spacing: 20) {
+                                    RingView(progress: progressFraction(store: store, targetCalories: targets.calories), label: "\(consumed)", sublabel: "kcal eaten")
+                                        .frame(maxWidth: .infinity)
+                                        .aspectRatio(1, contentMode: .fit)
+
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HomeStat(label: "Remaining", value: "\(max(0, targets.calories - consumed)) kcal")
+                                        HomeStat(label: "Daily target", value: "\(targets.calories) kcal")
+                                    }
                                 }
                             }
-                            Spacer()
-                            Image(systemName: "leaf.circle.fill")
-                                .font(.system(size: 30, weight: .semibold))
-                                .foregroundColor(.primaryOrange)
-                                .frame(width: 56, height: 56)
-                                .background(Color.primaryOrange.opacity(0.12))
-                                .clipShape(Circle())
                         }
-                        Text(goalLabel(for: profile.goal)).font(.caption.weight(.semibold)).foregroundColor(.primaryOrange).padding(.horizontal, 10).padding(.vertical, 6).background(Color.primaryOrange.opacity(0.12)).clipShape(Capsule())
-                    }
-                    HStack(spacing: 12) {
-                        Image(systemName: "quote.opening").font(.title3).foregroundColor(.primaryOrange)
-                        if motivation.isEmpty {
-                            ProgressView()
-                            Text(motivationStatus).font(.subheadline.weight(.medium)).foregroundColor(.secondary)
-                        } else {
-                            Text(motivation).font(.subheadline.weight(.medium))
-                        }
-                        Spacer()
-                    }
-                    .padding(14)
-                    .background(Color.primaryOrange.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    VStack(spacing: 16) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("TODAY'S FUEL").font(.caption2.weight(.bold)).foregroundColor(.white.opacity(0.75))
-                                Text("Keep your momentum going").font(.headline).foregroundColor(.white)
-                            }
-                            Spacer()
-                            Image(systemName: "flame.fill").font(.title2).foregroundColor(.white)
-                        }
-                        HStack(spacing: 20) {
-                            RingView(progress: progressFraction(store: store, targetCalories: targets.calories), label: "\(consumed)", sublabel: "kcal eaten").frame(width: 142, height: 142)
-                            VStack(alignment: .leading, spacing: 12) {
-                                HomeStat(label: "Remaining", value: "\(max(0, targets.calories - consumed)) kcal")
-                                HomeStat(label: "Daily target", value: "\(targets.calories) kcal")
+                        .padding(20)
+                        .background(LinearGradient(colors: [Color.primaryOrange, Color(red: 0.96, green: 0.35, blue: 0.25)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .shadow(color: Color.primaryOrange.opacity(0.25), radius: 14, y: 8)
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack { Text("Your daily targets").font(.headline); Spacer(); Image(systemName: "chart.bar.xaxis").foregroundColor(.accentBlue) }
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                                HomeMacroTile(title: "Protein", value: "\(targets.proteinGrams) g", icon: "bolt.fill", color: .accentBlue)
+                                HomeMacroTile(title: "Carbs", value: "\(targets.carbsGrams) g", icon: "leaf.fill", color: .green)
+                                HomeMacroTile(title: "Fats", value: "\(targets.fatsGrams) g", icon: "drop.fill", color: .purple)
+                                HomeMacroTile(title: "Logged", value: "\(store.entries.count) items", icon: "checkmark.circle.fill", color: .primaryOrange)
                             }
                         }
-                    }
-                    .padding(20)
-                    .background(LinearGradient(colors: [Color.primaryOrange, Color(red: 0.96, green: 0.35, blue: 0.25)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .shadow(color: Color.primaryOrange.opacity(0.25), radius: 14, y: 8)
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack { Text("Your daily targets").font(.headline); Spacer(); Image(systemName: "chart.bar.xaxis").foregroundColor(.accentBlue) }
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            HomeMacroTile(title: "Protein", value: "\(targets.proteinGrams) g", icon: "bolt.fill", color: .accentBlue)
-                            HomeMacroTile(title: "Carbs", value: "\(targets.carbsGrams) g", icon: "leaf.fill", color: .green)
-                            HomeMacroTile(title: "Fats", value: "\(targets.fatsGrams) g", icon: "drop.fill", color: .purple)
-                            HomeMacroTile(title: "Logged", value: "\(store.entries.count) items", icon: "checkmark.circle.fill", color: .primaryOrange)
-                        }
-                    }
-                    if store.entries.isEmpty {
-                        HStack(spacing: 14) {
-                            Image(systemName: "fork.knife.circle.fill").font(.title2).foregroundColor(.accentBlue)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Ready for your first entry?").font(.subheadline.weight(.semibold))
-                                Text("Scan a meal to start tracking today.").font(.caption).foregroundColor(.secondary)
+                        if store.entries.isEmpty {
+                            HStack(spacing: 14) {
+                                Image(systemName: "fork.knife.circle.fill").font(.title2).foregroundColor(.accentBlue)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Ready for your first entry?").font(.subheadline.weight(.semibold))
+                                    Text("Scan a meal to start tracking today.").font(.caption).foregroundColor(.secondary)
+                                }
+                                Spacer()
                             }
-                            Spacer()
+                            .padding(16).background(Color.accentBlue.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .padding(16).background(Color.accentBlue.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                 }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
-            .padding(20)
         }
         .background(Color(red: 0.98, green: 0.98, blue: 0.97).ignoresSafeArea())
         .task(id: store.profile?.geminiAPIKey) {
@@ -488,14 +624,23 @@ struct RingView: View {
     var label: String
     var sublabel: String
     var body: some View {
-        ZStack {
-            Circle().stroke(Color.primary.opacity(0.12), lineWidth: 18)
-            Circle().trim(from: 0, to: progress)
-                .stroke(Color.primaryOrange, style: StrokeStyle(lineWidth: 18, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.easeInOut, value: progress)
-            VStack { Text(label).font(.title).bold(); Text(sublabel).font(.caption).foregroundColor(.secondary) }
+        GeometryReader { geometry in
+            ZStack {
+                Circle().stroke(Color.primary.opacity(0.12), lineWidth: max(10, min(18, geometry.size.width * 0.12)))
+                Circle().trim(from: 0, to: progress)
+                    .stroke(Color.primaryOrange, style: StrokeStyle(lineWidth: max(10, min(18, geometry.size.width * 0.12)), lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut, value: progress)
+                VStack(spacing: 2) {
+                    Text(label)
+                        .font(.system(size: min(28, max(18, geometry.size.width * 0.24))).bold())
+                    Text(sublabel)
+                        .font(.system(size: min(12, max(10, geometry.size.width * 0.09))))
+                        .foregroundColor(.secondary)
+                }
+            }
         }
+        .aspectRatio(1, contentMode: .fit)
     }
 }
 
@@ -507,6 +652,12 @@ struct ScanView: View {
     @State private var name = "Scanned Food"
     @State private var isAnalyzing = false
     @State private var scanMessage = ""
+    @State private var manualMealText = ""
+
+    private var hasGeminiKey: Bool {
+        guard let key = store.profile?.geminiAPIKey else { return false }
+        return !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         ZStack {
@@ -546,6 +697,39 @@ struct ScanView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.primaryOrange)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Or add a meal by description")
+                                .font(.subheadline.weight(.semibold))
+                            TextField("e.g. 2 eggs, toast, fruit, yogurt", text: $manualMealText)
+                                .textFieldStyle(.roundedBorder)
+                                .disabled(!hasGeminiKey || isAnalyzing)
+                                .submitLabel(.done)
+                                .onSubmit {
+                                    guard hasGeminiKey else { return }
+                                    Task { await analyzeManualMeal() }
+                                }
+
+                            Button(action: {
+                                Task { await analyzeManualMeal() }
+                            }) {
+                                Label("Analyze meal text", systemImage: "text.badge.checkmark")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 4)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.accentBlue)
+                            .disabled(!hasGeminiKey || isAnalyzing || manualMealText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                            if !hasGeminiKey {
+                                Text("Add a Gemini API key in Profile to enable manual meal entry.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
                         if isAnalyzing {
                             ProgressView("Analyzing with Gemini...")
                                 .frame(maxWidth: .infinity)
@@ -577,10 +761,11 @@ struct ScanView: View {
                                 ScanNutritionTile(title: "Fats", value: "\(a.fats)", unit: "g", color: .purple)
                             }
                             Button(action: {
-                                let entry = FoodEntry(name: name, calories: a.calories, carbsGrams: a.carbs, proteinGrams: a.protein, fatsGrams: a.fats)
+                                let entry = FoodEntry(name: name, calories: a.calories, carbsGrams: a.carbs, proteinGrams: a.protein, fatsGrams: a.fats, source: .manual)
                                 store.addEntry(entry)
                                 pickedImage = nil
                                 analysis = nil
+                                manualMealText = ""
                             }) {
                                 Label("Add to today", systemImage: "plus.circle.fill")
                                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 4)
@@ -625,6 +810,46 @@ struct ScanView: View {
                 analysis = MacroCalculator.analyzeImage(image)
                 isAnalyzing = false
                 scanMessage = "AI unavailable: \(error.localizedDescription) Showing a local estimate."
+            }
+        }
+    }
+
+    private func analyzeManualMeal() async {
+        let input = manualMealText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !input.isEmpty else { return }
+
+        guard let profile = store.profile else {
+            await MainActor.run {
+                scanMessage = "Please create or restore your profile before analyzing meals."
+            }
+            return
+        }
+
+        guard let apiKey = profile.geminiAPIKey, !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            await MainActor.run {
+                scanMessage = "Add a Gemini API key in Profile to enable manual meal entry."
+            }
+            return
+        }
+
+        await MainActor.run {
+            isAnalyzing = true
+            scanMessage = ""
+            analysis = nil
+        }
+
+        do {
+            let result = try await GeminiNutritionService().analyzeText(description: input, apiKey: apiKey)
+            await MainActor.run {
+                name = result.name
+                analysis = (result.calories, result.carbs, result.protein, result.fats)
+                isAnalyzing = false
+                manualMealText = ""
+            }
+        } catch {
+            await MainActor.run {
+                isAnalyzing = false
+                scanMessage = "AI unavailable: \(error.localizedDescription)"
             }
         }
     }
@@ -755,11 +980,6 @@ struct TrackerView: View {
                                     Divider().padding(.leading, 52)
                                 }
                             }
-                            .onDelete { offsets in
-                                for offset in offsets {
-                                    store.deleteEntry(todayEntries[offset])
-                                }
-                            }
                         }
                         .padding(.horizontal, 16)
                         .background(Color.white.opacity(0.9))
@@ -818,6 +1038,7 @@ struct TrackerMacroRow: View {
 }
 
 struct TrackerMealRow: View {
+    @EnvironmentObject var store: AppStore
     let entry: FoodEntry
 
     var body: some View {
@@ -837,9 +1058,19 @@ struct TrackerMealRow: View {
                 Text("P \(entry.proteinGrams) • C \(entry.carbsGrams) • F \(entry.fatsGrams)")
                     .font(.caption2)
                     .foregroundColor(.secondary)
+                Text(entry.source == .manual ? "Typed meal" : "Photo scan")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(entry.source == .manual ? .accentBlue : .primaryOrange)
             }
         }
         .padding(.vertical, 14)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                store.deleteEntry(entry)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 }
 
@@ -968,154 +1199,157 @@ struct ProfileView: View {
     @State private var nutritionExportDocument = NutritionCSVDocument()
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(red: 1.0, green: 0.96, blue: 0.91), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                LinearGradient(colors: [Color(red: 1.0, green: 0.96, blue: 0.91), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    if let p = store.profile {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(alignment: .top) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Your profile")
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundColor(.secondary)
-                                    Text(name.isEmpty ? "Your details" : name)
-                                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                                }
-                                Spacer()
-                                Circle()
-                                    .fill(LinearGradient(colors: [.primaryOrange, Color(red: 0.94, green: 0.30, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 62, height: 62)
-                                    .overlay(Text(String((name.isEmpty ? p.email : name).prefix(1)).uppercased()).font(.title2.weight(.bold)).foregroundColor(.white))
-                            }
-                            Text("Keep your information and nutrition plan up to date.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .onAppear { loadProfile(p) }
-
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Label("Personal details", systemImage: "person.text.rectangle.fill")
-                                    .font(.headline)
-                                Spacer()
-                                Button(action: {
-                                    withAnimation(.easeInOut) {
-                                        isEditing.toggle()
-                                        savedMessage = false
-                                        targetWarning = ""
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        if let p = store.profile {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(alignment: .top) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Your profile")
+                                            .font(.subheadline.weight(.medium))
+                                            .foregroundColor(.secondary)
+                                        Text(name.isEmpty ? "Your details" : name)
+                                            .font(.system(size: min(32, max(24, geometry.size.width * 0.08)), weight: .bold, design: .rounded))
                                     }
-                                }) {
-                                    Image(systemName: isEditing ? "xmark" : "pencil")
-                                        .font(.headline.weight(.semibold))
-                                        .foregroundColor(.accentBlue)
-                                        .frame(width: 40, height: 40)
-                                        .background(Color.accentBlue.opacity(0.12))
-                                        .clipShape(Circle())
+                                    Spacer()
+                                    Circle()
+                                        .fill(LinearGradient(colors: [.primaryOrange, Color(red: 0.94, green: 0.30, blue: 0.18)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                        .frame(width: 62, height: 62)
+                                        .overlay(Text(String((name.isEmpty ? p.email : name).prefix(1)).uppercased()).font(.title2.weight(.bold)).foregroundColor(.white))
                                 }
-                                .accessibilityLabel(isEditing ? "Cancel editing" : "Edit profile")
+                                Text("Keep your information and nutrition plan up to date.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
-                            RegistrationInputField(title: "Name", placeholder: "Your name", icon: "person.fill", text: $name, isEditable: isEditing)
-                            RegistrationInputField(title: "Email", placeholder: "Email address", icon: "envelope.fill", text: $email, isEmail: true, isEditable: isEditing)
-                            ProfileGenderField(gender: $gender, isEditable: isEditing)
-                            ProfilePickerField(title: "Age", unit: "years", icon: "calendar", value: $age, range: 13...100, isEditable: isEditing)
-                            ProfilePickerField(title: "Weight", unit: "kg", icon: "scalemass.fill", value: $weight, range: 30...250, isEditable: isEditing)
-                            ProfilePickerField(title: "Height", unit: "cm", icon: "ruler.fill", value: $height, range: 100...230, isEditable: isEditing)
-                        }
-                        .padding(20)
-                        .background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .onAppear { loadProfile(p) }
 
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Label("Nutrition targets", systemImage: "chart.bar.fill")
-                                    .font(.headline)
-                                Spacer()
-                                Toggle("Custom", isOn: $customTargets)
-                                    .labelsHidden()
-                                    .tint(.accentBlue)
-                                    .disabled(!isEditing)
-                            }
-                            Text(customTargets ? "Set targets that work best for your plan." : "Targets are calculated from your profile and goal.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            if customTargets {
-                                OnboardingMetricField(title: "Calories", value: $calorieTarget, unit: "kcal", icon: "flame.fill", isDecimal: false, isEditable: isEditing)
-                                OnboardingMetricField(title: "Protein", value: $proteinTarget, unit: "g", icon: "bolt.fill", isDecimal: false, isEditable: isEditing)
-                                OnboardingMetricField(title: "Fat", value: $fatTarget, unit: "g", icon: "drop.fill", isDecimal: false, isEditable: isEditing)
-                                if !targetWarning.isEmpty {
-                                    Label(targetWarning, systemImage: "exclamationmark.triangle.fill")
-                                        .font(.caption.weight(.medium))
-                                        .foregroundColor(.orange)
-                                        .padding(12)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(Color.orange.opacity(0.12))
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    Label("Personal details", systemImage: "person.text.rectangle.fill")
+                                        .font(.headline)
+                                    Spacer()
+                                    Button(action: {
+                                        withAnimation(.easeInOut) {
+                                            isEditing.toggle()
+                                            savedMessage = false
+                                            targetWarning = ""
+                                        }
+                                    }) {
+                                        Image(systemName: isEditing ? "xmark" : "pencil")
+                                            .font(.headline.weight(.semibold))
+                                            .foregroundColor(.accentBlue)
+                                            .frame(width: 40, height: 40)
+                                            .background(Color.accentBlue.opacity(0.12))
+                                            .clipShape(Circle())
+                                    }
+                                    .accessibilityLabel(isEditing ? "Cancel editing" : "Edit profile")
                                 }
-                            } else {
-                                let targets = MacroCalculator.targets(for: p)
-                                HStack(spacing: 10) {
-                                    ProfileTargetBadge(value: "\(targets.calories)", label: "kcal", color: .primaryOrange)
-                                    ProfileTargetBadge(value: "\(targets.proteinGrams)g", label: "protein", color: .accentBlue)
-                                    ProfileTargetBadge(value: "\(targets.fatsGrams)g", label: "fat", color: .purple)
+                                RegistrationInputField(title: "Name", placeholder: "Your name", icon: "person.fill", text: $name, isEditable: isEditing)
+                                RegistrationInputField(title: "Email", placeholder: "Email address", icon: "envelope.fill", text: $email, isEmail: true, isEditable: isEditing)
+                                ProfileGenderField(gender: $gender, isEditable: isEditing)
+                                ProfilePickerField(title: "Age", unit: "years", icon: "calendar", value: $age, range: 13...100, isEditable: isEditing)
+                                ProfilePickerField(title: "Weight", unit: "kg", icon: "scalemass.fill", value: $weight, range: 30...250, isEditable: isEditing)
+                                ProfilePickerField(title: "Height", unit: "cm", icon: "ruler.fill", value: $height, range: 100...230, isEditable: isEditing)
+                            }
+                            .padding(20)
+                            .background(.regularMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    Label("Nutrition targets", systemImage: "chart.bar.fill")
+                                        .font(.headline)
+                                    Spacer()
+                                    Toggle("Custom", isOn: $customTargets)
+                                        .labelsHidden()
+                                        .tint(.accentBlue)
+                                        .disabled(!isEditing)
+                                }
+                                Text(customTargets ? "Set targets that work best for your plan." : "Targets are calculated from your profile and goal.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                if customTargets {
+                                    OnboardingMetricField(title: "Calories", value: $calorieTarget, unit: "kcal", icon: "flame.fill", isDecimal: false, isEditable: isEditing)
+                                    OnboardingMetricField(title: "Protein", value: $proteinTarget, unit: "g", icon: "bolt.fill", isDecimal: false, isEditable: isEditing)
+                                    OnboardingMetricField(title: "Fat", value: $fatTarget, unit: "g", icon: "drop.fill", isDecimal: false, isEditable: isEditing)
+                                    if !targetWarning.isEmpty {
+                                        Label(targetWarning, systemImage: "exclamationmark.triangle.fill")
+                                            .font(.caption.weight(.medium))
+                                            .foregroundColor(.orange)
+                                            .padding(12)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(Color.orange.opacity(0.12))
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    }
+                                } else {
+                                    let targets = MacroCalculator.targets(for: p)
+                                    HStack(spacing: 10) {
+                                        ProfileTargetBadge(value: "\(targets.calories)", label: "kcal", color: .primaryOrange)
+                                        ProfileTargetBadge(value: "\(targets.proteinGrams)g", label: "protein", color: .accentBlue)
+                                        ProfileTargetBadge(value: "\(targets.fatsGrams)g", label: "fat", color: .purple)
+                                    }
                                 }
                             }
-                        }
-                        .padding(20)
-                        .background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .padding(20)
+                            .background(.regularMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
 
-                        Button(action: {
-                            saveProfile()
-                            withAnimation { isEditing = false }
-                        }) {
-                            Label(savedMessage ? "Changes saved" : "Save changes", systemImage: savedMessage ? "checkmark.circle.fill" : "square.and.arrow.down.fill")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.accentBlue)
-                        .disabled(!isEditing)
-                        .opacity(isEditing ? 1 : 0.55)
-
-                        VStack(alignment: .leading, spacing: 14) {
-                            Label("Nutrition history", systemImage: "arrow.down.doc.fill")
-                                .font(.headline)
-                            Text("Download every saved meal with its date and nutrition values.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                             Button(action: {
-                                nutritionExportDocument = NutritionCSVDocument(entries: store.entries)
-                                isExportingNutrition = true
+                                saveProfile()
+                                withAnimation { isEditing = false }
                             }) {
-                                Label("Download nutrition CSV", systemImage: "arrow.down.circle.fill")
-                                    .font(.subheadline.weight(.semibold))
+                                Label(savedMessage ? "Changes saved" : "Save changes", systemImage: savedMessage ? "checkmark.circle.fill" : "square.and.arrow.down.fill")
+                                    .font(.headline)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 4)
                             }
-                            .buttonStyle(.bordered)
-                            .tint(.primaryOrange)
-                            .disabled(store.entries.isEmpty)
-                            if store.entries.isEmpty {
-                                Text("Add a meal before downloading your nutrition history.")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(20)
-                        .background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .buttonStyle(.borderedProminent)
+                            .tint(.accentBlue)
+                            .disabled(!isEditing)
+                            .opacity(isEditing ? 1 : 0.55)
 
-                        Button("Log out") { store.logout() }
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
+                            VStack(alignment: .leading, spacing: 14) {
+                                Label("Nutrition history", systemImage: "arrow.down.doc.fill")
+                                    .font(.headline)
+                                Text("Download every saved meal with its date and nutrition values.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Button(action: {
+                                    nutritionExportDocument = NutritionCSVDocument(entries: store.entries)
+                                    isExportingNutrition = true
+                                }) {
+                                    Label("Download nutrition CSV", systemImage: "arrow.down.circle.fill")
+                                        .font(.subheadline.weight(.semibold))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 4)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.primaryOrange)
+                                .disabled(store.entries.isEmpty)
+                                if store.entries.isEmpty {
+                                    Text("Add a meal before downloading your nutrition history.")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(20)
+                            .background(.regularMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+
+                            Button("Log out") { store.logout() }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity)
+                        }
                     }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .padding(20)
             }
         }
         .fileExporter(
@@ -1277,21 +1511,37 @@ struct ProfilePickerField: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: icon).foregroundColor(.accentBlue).frame(width: 24)
-            Text(title).font(.subheadline.weight(.medium))
-            Spacer()
-            Picker(title, selection: $value) {
-                ForEach(Array(range), id: \.self) { number in
-                    Text("\(number)").tag(number)
+            Image(systemName: icon)
+                .foregroundColor(.accentBlue)
+                .frame(width: 28, height: 28)
+                .background(Color.accentBlue.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title.uppercased())
+                    .font(.caption2.weight(.bold))
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 8) {
+                    Picker(title, selection: $value) {
+                        ForEach(Array(range), id: \.self) { number in
+                            Text("\(number)").tag(number)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(maxWidth: 120)
+                    .disabled(!isEditable)
+
+                    Text(unit)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.secondary)
                 }
             }
-            .pickerStyle(.menu)
-            .tint(.primary)
-            .disabled(!isEditable)
-            Text(unit).font(.caption.weight(.semibold)).foregroundColor(.secondary).frame(width: 42, alignment: .leading)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 14)
-        .frame(minHeight: 58)
+        .frame(minHeight: 62)
         .background(Color.white.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(isEditable ? 0.45 : 0.12), lineWidth: 1.5))
@@ -1320,60 +1570,76 @@ struct SettingsView: View {
     @EnvironmentObject var store: AppStore
     @AppStorage("waterNotificationsEnabled") private var notificationsEnabled = true
     @AppStorage("waterGoalML") private var waterGoalML = 3000
+    @AppStorage("appTheme") private var appTheme: AppTheme = .system
     @State private var geminiAPIKey = ""
     @State private var saved = false
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Settings").font(.system(size: 32, weight: .bold, design: .rounded))
-                        Text("Make Btracker fit your workday.").font(.subheadline).foregroundColor(.secondary)
-                    }
-                    VStack(alignment: .leading, spacing: 16) {
-                        Label("AI nutrition assistant", systemImage: "sparkles").font(.headline)
-                        Text("Your key stays on this device and is used for food analysis and daily motivation.")
-                            .font(.caption).foregroundColor(.secondary)
-                        APIKeyInputField(value: $geminiAPIKey, isEditable: true)
-                        Button(action: saveSettings) {
-                            Label(saved ? "Saved" : "Save API key", systemImage: saved ? "checkmark.circle.fill" : "square.and.arrow.down.fill")
-                                .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 4)
+        GeometryReader { geometry in
+            ZStack {
+                LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Settings").font(.system(size: min(32, max(24, geometry.size.width * 0.08)), weight: .bold, design: .rounded))
+                            Text("Make Btracker fit your workday.").font(.subheadline).foregroundColor(.secondary)
                         }
-                        .buttonStyle(.borderedProminent).tint(.primaryOrange)
-                    }
-                    .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
-                    VStack(alignment: .leading, spacing: 16) {
-                        Label("Hydration reminders", systemImage: "drop.fill").font(.headline)
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Workday notifications").font(.subheadline.weight(.medium))
-                                Text("9 AM, 11 AM, 1 PM, 3 PM, and 5 PM").font(.caption).foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Toggle("Water reminders", isOn: $notificationsEnabled)
-                                .labelsHidden().tint(.primaryOrange)
-                                .onChange(of: notificationsEnabled) { _, enabled in
-                                    Task { await WaterReminderScheduler.update(enabled: enabled) }
+                        VStack(alignment: .leading, spacing: 16) {
+                            Label("Appearance", systemImage: "paintbrush.fill").font(.headline)
+                            Text("Choose the theme for the app. Mobile theme follows the system setting by default.")
+                                .font(.caption).foregroundColor(.secondary)
+                            Picker("App theme", selection: $appTheme) {
+                                ForEach(AppTheme.allCases, id: \.self) { theme in
+                                    Text(theme.title).tag(theme)
                                 }
-                        }
-                        HStack {
-                            Text("Daily goal").font(.subheadline.weight(.medium))
-                            Spacer()
-                            Picker("Daily goal", selection: $waterGoalML) {
-                                Text("2 L").tag(2000)
-                                Text("2.5 L").tag(2500)
-                                Text("3 L").tag(3000)
-                                Text("3.5 L").tag(3500)
-                                Text("4 L").tag(4000)
                             }
-                            .pickerStyle(.menu).tint(.primaryOrange)
+                            .pickerStyle(.segmented)
                         }
+                        .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
+                        VStack(alignment: .leading, spacing: 16) {
+                            Label("AI nutrition assistant", systemImage: "sparkles").font(.headline)
+                            Text("Your key stays on this device and is used for food analysis and daily motivation.")
+                                .font(.caption).foregroundColor(.secondary)
+                            APIKeyInputField(value: $geminiAPIKey, isEditable: true)
+                            Button(action: saveSettings) {
+                                Label(saved ? "Saved" : "Save API key", systemImage: saved ? "checkmark.circle.fill" : "square.and.arrow.down.fill")
+                                    .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 4)
+                            }
+                            .buttonStyle(.borderedProminent).tint(.primaryOrange)
+                        }
+                        .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
+                        VStack(alignment: .leading, spacing: 16) {
+                            Label("Hydration reminders", systemImage: "drop.fill").font(.headline)
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Workday notifications").font(.subheadline.weight(.medium))
+                                    Text("9 AM, 11 AM, 1 PM, 3 PM, and 5 PM").font(.caption).foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Toggle("Water reminders", isOn: $notificationsEnabled)
+                                    .labelsHidden().tint(.primaryOrange)
+                                    .onChange(of: notificationsEnabled) { _, enabled in
+                                        Task { await WaterReminderScheduler.update(enabled: enabled) }
+                                    }
+                            }
+                            HStack {
+                                Text("Daily goal").font(.subheadline.weight(.medium))
+                                Spacer()
+                                Picker("Daily goal", selection: $waterGoalML) {
+                                    Text("2 L").tag(2000)
+                                    Text("2.5 L").tag(2500)
+                                    Text("3 L").tag(3000)
+                                    Text("3.5 L").tag(3500)
+                                    Text("4 L").tag(4000)
+                                }
+                                .pickerStyle(.menu).tint(.primaryOrange)
+                            }
+                        }
+                        .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
                     }
-                    .padding(20).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20))
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .padding(20)
             }
         }
         .onAppear {

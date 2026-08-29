@@ -137,6 +137,13 @@ final class CoreDataStack {
         entryProperties.append(intAttr("proteinGrams"))
         entryProperties.append(intAttr("fatsGrams"))
 
+        let sourceAttr = NSAttributeDescription()
+        sourceAttr.name = "source"
+        sourceAttr.attributeType = .stringAttributeType
+        sourceAttr.isOptional = false
+        sourceAttr.defaultValue = EntrySource.photo.rawValue
+        entryProperties.append(sourceAttr)
+
         entry.properties = entryProperties
 
         model.entities = [user, entry]

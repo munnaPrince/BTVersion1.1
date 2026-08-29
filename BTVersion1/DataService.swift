@@ -126,8 +126,8 @@ struct GeminiNutritionService {
         request.httpBody = try JSONEncoder().encode(requestBody)
 
         let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 60
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = 300
+        configuration.timeoutIntervalForResource = 300
         let session = URLSession(configuration: configuration)
         let (data, response): (Data, URLResponse)
         do {
@@ -148,6 +148,44 @@ struct GeminiNutritionService {
         return (nutrition.name ?? "Scanned Food", max(0, nutrition.calories), max(0, nutrition.carbs), max(0, nutrition.protein), max(0, nutrition.fats))
     }
 
+    func analyzeText(description: String, apiKey: String) async throws -> (name: String, calories: Int, carbs: Int, protein: Int, fats: Int) {
+        let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKey.isEmpty else { throw GeminiNutritionError.invalidAPIKey }
+        let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedDescription.isEmpty else { throw GeminiNutritionError.invalidResponse }
+
+        let endpoint = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=\(trimmedKey)")!
+        let prompt = "Estimate the nutrition for this meal or snack: \(trimmedDescription). Return JSON only with exactly these keys: name (string), calories (integer kcal), carbs (integer grams), protein (integer grams), fats (integer grams). Use practical values and keep the answer realistic. No markdown or explanation."
+        let requestBody = Request(contents: [.init(parts: [.init(text: prompt, inlineData: nil)])])
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(requestBody)
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 300
+        configuration.timeoutIntervalForResource = 300
+        let session = URLSession(configuration: configuration)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch is URLError {
+            throw GeminiNutritionError.requestFailed("Gemini took too long to respond. Please try again later.")
+        } catch {
+            throw GeminiNutritionError.requestFailed(error.localizedDescription)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw GeminiNutritionError.requestFailed("Gemini could not estimate this meal. Please check your API key or try a clearer description.")
+        }
+        let decodedResponse = try JSONDecoder().decode(Response.self, from: data)
+        guard let text = decodedResponse.candidates?.first?.content.parts.first?.text else { throw GeminiNutritionError.invalidResponse }
+        let cleanText = text.replacingOccurrences(of: "```json", with: "").replacingOccurrences(of: "```", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let nutrition = try JSONDecoder().decode(Nutrition.self, from: Data(cleanText.utf8))
+        return (nutrition.name ?? "Logged Meal", max(0, nutrition.calories), max(0, nutrition.carbs), max(0, nutrition.protein), max(0, nutrition.fats))
+    }
+
     func motivationalQuote(apiKey: String) async throws -> String {
         let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedKey.isEmpty else { throw GeminiNutritionError.invalidAPIKey }
@@ -162,8 +200,8 @@ struct GeminiNutritionService {
         request.httpBody = try JSONEncoder().encode(requestBody)
 
         let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 60
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = 300
+        configuration.timeoutIntervalForResource = 300
         let session = URLSession(configuration: configuration)
         let (data, response): (Data, URLResponse)
         do {
