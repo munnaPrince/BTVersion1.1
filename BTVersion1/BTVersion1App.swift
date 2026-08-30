@@ -8,6 +8,9 @@
 import SwiftUI
 import CoreData
 
+import SwiftUI
+import CoreData
+
 @main
 struct BTVersion1App: App {
     @StateObject private var store = AppStore()
@@ -16,8 +19,6 @@ struct BTVersion1App: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea(.all)
                 .preferredColorScheme(appTheme.colorScheme)
                 .environmentObject(store)
                 .environment(\.managedObjectContext, CoreDataStack.shared.container.viewContext)

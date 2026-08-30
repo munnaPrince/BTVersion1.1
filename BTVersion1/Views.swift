@@ -13,6 +13,10 @@ import UniformTypeIdentifiers
 extension Color {
     static let primaryOrange = Color(red: 1.0, green: 0.58, blue: 0.38)
     static let accentBlue = Color(red: 0.96, green: 0.38, blue: 0.24)
+    static let appBackground = Color(uiColor: .systemBackground)
+    static let appSecondaryBackground = Color(uiColor: .secondarySystemBackground)
+    static let appTertiaryBackground = Color(uiColor: .tertiarySystemBackground)
+    static let appCardBackground = Color(uiColor: .secondarySystemBackground)
 }
 
 enum AppTheme: String, CaseIterable {
@@ -65,7 +69,7 @@ struct LoginView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                LinearGradient(colors: [Color(red: 1.0, green: 0.96, blue: 0.91), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+                Color.appBackground
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -112,7 +116,7 @@ struct LoginView: View {
                             }
                             .padding(.horizontal, 14)
                             .frame(minHeight: 62)
-                            .background(Color.white.opacity(0.9))
+                            .background(Color.appCardBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primaryOrange.opacity(gender.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
 
@@ -178,7 +182,7 @@ struct RegistrationInputField: View {
         }
         .padding(.horizontal, 14)
         .frame(minHeight: 62)
-        .background(Color.white.opacity(0.9))
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primaryOrange.opacity(text.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
     }
@@ -194,7 +198,7 @@ struct OnboardingView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                LinearGradient(colors: [Color(red: 0.97, green: 0.94, blue: 0.90), Color(red: 0.99, green: 0.99, blue: 0.98)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                Color.appBackground
                     .ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
@@ -218,7 +222,7 @@ struct OnboardingView: View {
                             OnboardingPickerField(title: "Height", unit: "cm", icon: "ruler.fill", range: 100...230, value: $height)
                         }
                         .padding(18)
-                        .background(Color(UIColor.systemGray5).opacity(0.75))
+                        .background(Color.appSecondaryBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 22))
                         VStack(alignment: .leading, spacing: 14) {
                             Label("What is your focus?", systemImage: "target").font(.headline)
@@ -309,7 +313,7 @@ struct OnboardingMetricField: View {
         }
         .padding(.horizontal, 14)
         .frame(minHeight: 62)
-        .background(Color.white.opacity(0.9))
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(value.isEmpty ? 0.12 : 0.55), lineWidth: 1.5))
         .opacity(isEditable ? 1 : 0.72)
@@ -359,21 +363,23 @@ struct OnboardingPickerField: View {
         }
         .padding(.horizontal, 14)
         .frame(minHeight: 64)
-        .background(Color(UIColor.systemGray6).opacity(0.9))
+        .background(Color.appSecondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.accentBlue.opacity(0.35), lineWidth: 1.5))
     }
 }
 
 struct MainTabView: View {
+    @State private var selectedTab = 2
+
     var body: some View {
-        TabView {
-            HomeView().tabItem { Label("Home", systemImage: "house.fill") }
-            ScanView().tabItem { Label("Scan", systemImage: "camera.fill") }
-            TrackerView().tabItem { Label("Tracker", systemImage: "chart.bar.fill") }
-            WaterView().tabItem { Label("Water", systemImage: "drop.fill") }
-            ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }
-            SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }
+        TabView(selection: $selectedTab) {
+            HomeView().tabItem { Label("Home", systemImage: "house.fill") }.tag(0)
+            ScanView(selectedTab: $selectedTab).tabItem { Label("Scan", systemImage: "camera.fill") }.tag(1)
+            TrackerView().tabItem { Label("Tracker", systemImage: "chart.bar.fill") }.tag(2)
+            WaterView().tabItem { Label("Water", systemImage: "drop.fill") }.tag(3)
+            ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }.tag(4)
+            SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(5)
         }
         .tint(.primaryOrange)
     }
@@ -495,7 +501,7 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .background(Color(red: 0.98, green: 0.98, blue: 0.97).ignoresSafeArea())
+        .background(Color.appBackground.ignoresSafeArea())
         .task(id: store.profile?.geminiAPIKey) {
             await loadDailyMotivation()
         }
@@ -581,7 +587,7 @@ struct HomeMacroTile: View {
             VStack(alignment: .leading, spacing: 2) { Text(title).font(.caption).foregroundColor(.secondary); Text(value).font(.subheadline.weight(.bold)) }
             Spacer(minLength: 0)
         }
-        .padding(12).background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(12).background(Color.appCardBackground).clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
@@ -646,6 +652,7 @@ struct RingView: View {
 
 struct ScanView: View {
     @EnvironmentObject var store: AppStore
+    @Binding var selectedTab: Int
     @State private var showingPicker = false
     @State private var pickedImage: UIImage?
     @State private var analysis: (calories:Int, carbs:Int, protein:Int, fats:Int)? = nil
@@ -661,7 +668,7 @@ struct ScanView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(red: 1.0, green: 0.96, blue: 0.91), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color.appBackground
                 .ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -701,14 +708,20 @@ struct ScanView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Or add a meal by description")
                                 .font(.subheadline.weight(.semibold))
-                            TextField("e.g. 2 eggs, toast, fruit, yogurt", text: $manualMealText)
-                                .textFieldStyle(.roundedBorder)
-                                .disabled(!hasGeminiKey || isAnalyzing)
-                                .submitLabel(.done)
-                                .onSubmit {
-                                    guard hasGeminiKey else { return }
-                                    Task { await analyzeManualMeal() }
-                                }
+                            TextField(
+                                "e.g. 2 eggs, toast, fruit, yogurt",
+                                text: $manualMealText,
+                                axis: .vertical
+                            )
+                            .lineLimit(1...5)
+                            .frame(minHeight: 80)
+                            .textFieldStyle(.roundedBorder)
+                            .disabled(!hasGeminiKey || isAnalyzing)
+                            .submitLabel(.done)
+                            .onSubmit {
+                                guard hasGeminiKey else { return }
+                                Task { await analyzeManualMeal() }
+                            }
 
                             Button(action: {
                                 Task { await analyzeManualMeal() }
@@ -766,6 +779,7 @@ struct ScanView: View {
                                 pickedImage = nil
                                 analysis = nil
                                 manualMealText = ""
+                                selectedTab = 2
                             }) {
                                 Label("Add to today", systemImage: "plus.circle.fill")
                                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 4)
@@ -885,7 +899,7 @@ struct TrackerView: View {
         let targets = store.profile.map { MacroCalculator.targets(for: $0) }
 
         ZStack {
-            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color.appBackground
                 .ignoresSafeArea()
 
             ScrollView {
@@ -982,7 +996,7 @@ struct TrackerView: View {
                             }
                         }
                         .padding(.horizontal, 16)
-                        .background(Color.white.opacity(0.9))
+                        .background(Color.appCardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 18))
                     }
                 }
@@ -1083,7 +1097,8 @@ struct WaterView: View {
         let goalML = max(waterGoalML, 3000)
         let progress = min(1, Double(waterIntakeML) / Double(goalML))
         ZStack {
-            LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
+            Color.appBackground
+                .ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -1110,7 +1125,7 @@ struct WaterView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                     HStack(spacing: 12) {
                         WaterAddButton(amount: 250, action: { addWater(250) })
-                        WaterAddButton(amount: 500, action: { addWater(500) })
+                        WaterMinusButton(amount: 250, action: { minusWater(250) })
                     }
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
@@ -1138,8 +1153,13 @@ struct WaterView: View {
     }
 
     private func addWater(_ amount: Int) {
-        waterIntakeML = min(max(waterGoalML, 3000), waterIntakeML + amount)
+        waterIntakeML = min(waterGoalML, waterIntakeML + amount)
     }
+
+    private func minusWater(_ amount: Int) {
+        waterIntakeML = max(0, waterIntakeML - amount)
+    }
+
 }
 
 struct WaterAddButton: View {
@@ -1148,6 +1168,18 @@ struct WaterAddButton: View {
     var body: some View {
         Button(action: action) {
             Label("+\(amount) ml", systemImage: "plus.circle.fill")
+                .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 8)
+        }
+        .buttonStyle(.borderedProminent).tint(.primaryOrange)
+    }
+}
+
+struct WaterMinusButton: View {
+    let amount: Int
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Label("-\(amount) ml", systemImage: "minus.circle.fill")
                 .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 8)
         }
         .buttonStyle(.borderedProminent).tint(.primaryOrange)
@@ -1201,7 +1233,7 @@ struct ProfileView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                LinearGradient(colors: [Color(red: 1.0, green: 0.96, blue: 0.91), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+                Color.appBackground
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -1466,7 +1498,7 @@ struct ProfileGenderField: View {
         }
         .padding(.horizontal, 14)
         .frame(minHeight: 58)
-        .background(Color.white.opacity(0.9))
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primaryOrange.opacity(0.15), lineWidth: 1.5))
     }
@@ -1494,7 +1526,7 @@ struct APIKeyInputField: View {
         }
         .padding(.horizontal, 14)
         .frame(minHeight: 58)
-        .background(Color.white.opacity(0.9))
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(isEditable ? 0.45 : 0.12), lineWidth: 1.5))
         .opacity(isEditable ? 1 : 0.72)
@@ -1542,7 +1574,7 @@ struct ProfilePickerField: View {
         }
         .padding(.horizontal, 14)
         .frame(minHeight: 62)
-        .background(Color.white.opacity(0.9))
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.accentBlue.opacity(isEditable ? 0.45 : 0.12), lineWidth: 1.5))
         .opacity(isEditable ? 1 : 0.72)
@@ -1577,7 +1609,8 @@ struct SettingsView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                LinearGradient(colors: [Color(red: 1.0, green: 0.95, blue: 0.90), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
+                Color.appBackground
+                    .ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         VStack(alignment: .leading, spacing: 5) {
