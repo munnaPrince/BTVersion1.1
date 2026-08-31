@@ -377,7 +377,8 @@ struct MainTabView: View {
             HomeView().tabItem { Label("Home", systemImage: "house.fill") }.tag(0)
             ScanView(selectedTab: $selectedTab).tabItem { Label("Scan", systemImage: "camera.fill") }.tag(1)
             TrackerView().tabItem { Label("Tracker", systemImage: "chart.bar.fill") }.tag(2)
-            WaterView().tabItem { Label("Water", systemImage: "drop.fill") }.tag(3)
+            // WaterView().tabItem { Label("Water", systemImage: "drop.fill") }.tag(3)
+            WorkoutView().tabItem { Label("Running", systemImage: "figure.run") }.tag(3)
             ProfileView().tabItem { Label("Profile", systemImage: "person.crop.circle") }.tag(4)
             SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(5)
         }
